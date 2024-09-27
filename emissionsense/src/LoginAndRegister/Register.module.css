@@ -1,0 +1,63 @@
+html, body {
+  margin: 0; /* Remove default margin */
+  padding: 0; /* Remove default padding */
+  height: 100%; /* Set height to 100% for full-page background */
+}
+
+.container {
+  display: flex;
+  min-height: 100vh; /* Full height of the viewport */
+  background-image: url(https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEih15T4fq9RZKklNDTaLjXDzhaOJHxDLR0SjrdT_ZPKfZh8iOYnDYf1S52RqOVTuim-d4wpmmb79Bx6Z1gTbZjLLj7cGN4CUp-KjJBQxLWhtz1J2lQir6dw6mcoydymaRKtVRNpNpzH_mlq/s1600/_DSC1069.JPG);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover; /* Ensure the background image covers the entire container */
+}
+
+.left {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: none; /* Prevent flex from expanding */
+  padding: 30px; /* Add padding if needed */
+}
+
+.formContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.4); /* Semi-transparent border */
+  border-radius: 12px;
+  backdrop-filter: blur(5px); /* Apply blur effect */
+  -webkit-backdrop-filter: blur(5px); /* Safari and iOS support */
+  background: rgba(255, 255, 255, 0.1); /* Transparent background */
+  z-index: 1; /* Ensures it stays above the overlay */
+}
+
+.right {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* Add a gradient layer over the background image */
+.right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+}
+
+.form {
+  width: 100%;
+  max-width: 435px; /* Use px instead of rem for max-width */
+  padding: 30px; /* Use px instead of rem for padding */
+}
+
+.title {
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
+  font-family: Greycliff CF, var(--mantine-font-family);
+}
