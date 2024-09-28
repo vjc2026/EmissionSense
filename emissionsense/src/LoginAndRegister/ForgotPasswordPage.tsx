@@ -18,34 +18,33 @@ import {
     const navigate = useNavigate();
   
     const handleResetPassword = async () => {
-        try {
-          const response = await fetch('/api/forgot-password', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email }),
-          });
-      
-          const result = await response.json();
-      
-          if (response.ok) {
-            setMessage('Verification code has been sent to your email.');
-            setError('');
-          } else {
-            setError(result.error || 'Reset password failed');
-            setMessage('');
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          setError('An error occurred. Please try again later.');
+      try {
+        const response = await fetch('http://localhost:5000/forgot-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email }),
+        });
+  
+        const result = await response.json();
+  
+        if (response.ok) {
+          setMessage('Password reset link has been sent to your email.');
+          setError('');
+        } else {
+          setError(result.error || 'Reset password failed');
           setMessage('');
         }
-      };
-      
+      } catch (error) {
+        console.error('Error:', error);
+        setError('An error occurred. Please try again later.');
+        setMessage('');
+      }
+    };
   
     const handleBackToLogin = () => {
-      navigate('/');
+      navigate('/login');
     };
   
     return (

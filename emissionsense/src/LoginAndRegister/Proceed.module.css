@@ -1,30 +1,52 @@
-formContainer {
-    background-color: #2c2e33;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
-    margin: 0 auto;
-  }
+.container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: url(https://i.pinimg.com/originals/a3/51/9b/a3519b226385b9b59e734e6dfb9e7b65.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100vh;
+  overflow: hidden;
+}
 
-  .stackContainer {
-    text-align: center;
-  }
+.formContainer {
+  position: relative;
+  padding: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.2); /* Translucent border */
+  border-radius: 10px;
+  backdrop-filter: blur(10px); /* Blur effect */
+  -webkit-backdrop-filter: blur(10px); /* Safari and iOS support */
+  background-color: rgba(255, 255, 255, 0.05); /* Reduced opacity to avoid white background */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  max-width: 400px;
+  margin: 0 auto;
+}
 
-  .heading {
-    color: white;
-  }
+.stackContainer {
+  text-align: center;
+}
 
-  .button {
-    width: 100%;
-    margin-top: 8px;
-    background-color: #1c7ed6;
-    color: white;
-  }
+.heading {
+  color: white;
+}
 
-  .inputField {
-    margin-top: 8px;
-    background-color: #373a40;
-    border-color: #2f3034;
-    color: white;
-  }
+.button {
+  width: 100%;
+  margin-top: 8px;
+  background-color: #1c7ed6;
+  color: white;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover {
+  background-color: #155fa0;
+}
+
+.inputField {
+  margin-top: 8px;
+  background-color: #373a40;
+  border-color: #2f3034;
+  color: white;
+}

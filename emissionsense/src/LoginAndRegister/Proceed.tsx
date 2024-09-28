@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Paper, Title, Text, TextInput, Button, Container, Group, Anchor, Center, Box, rem } from '@mantine/core';
+import { Title, Text, TextInput, Button, Container, Group, Anchor, Center, Box, rem } from '@mantine/core';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import classes from './Proceed.module.css'; // Assuming this is where your styles reside
 
 const DeviceForm: React.FC = () => {
   const navigate = useNavigate();
@@ -45,44 +46,31 @@ const DeviceForm: React.FC = () => {
   };
 
   return (
+    <div className={classes.container}>
     <Container size={480} my={30}>
-      <Title ta="center">
+      <Title ta="center" className={classes.heading}>
         {device ? `Device: ${device}` : 'Select your Device'}
       </Title>
       <Text c="dimmed" fz="sm" ta="center">
         {device ? 'Enter your information below' : 'Choose a device type to continue'}
       </Text>
 
-      <Paper withBorder shadow="md" p={30} radius="md" mt="xl">
+      <div className={classes.formContainer}>
         {!device ? (
           <Group ta="center" mt="md">
-            <Button 
-              fullWidth 
-              size="md" 
+            <Button
+              fullWidth
+              size="md"
               onClick={() => setDevice('Personal Computer')}
-              styles={(theme) => ({
-                root: {
-                  backgroundColor: theme.colors.blue[6],
-                  ':hover': {
-                    backgroundColor: theme.colors.blue[7],
-                  },
-                },
-              })}
+              className={classes.button}
             >
               Personal Computer
             </Button>
-            <Button 
-              fullWidth 
-              size="md" 
+            <Button
+              fullWidth
+              size="md"
               onClick={() => setDevice('Laptop')}
-              styles={(theme) => ({
-                root: {
-                  backgroundColor: theme.colors.blue[6],
-                  ':hover': {
-                    backgroundColor: theme.colors.blue[7],
-                  },
-                },
-              })}
+              className={classes.button}
             >
               Laptop
             </Button>
@@ -96,6 +84,7 @@ const DeviceForm: React.FC = () => {
               onChange={(e) => setCpu(e.currentTarget.value)}
               required
               mb="sm"
+              className={classes.inputField}
             />
             <TextInput
               label="GPU"
@@ -104,6 +93,7 @@ const DeviceForm: React.FC = () => {
               onChange={(e) => setGpu(e.currentTarget.value)}
               required
               mb="sm"
+              className={classes.inputField}
             />
             <TextInput
               label="RAM"
@@ -112,6 +102,7 @@ const DeviceForm: React.FC = () => {
               onChange={(e) => setRam(e.currentTarget.value)}
               required
               mb="sm"
+              className={classes.inputField}
             />
             <TextInput
               label="Motherboard"
@@ -120,6 +111,7 @@ const DeviceForm: React.FC = () => {
               onChange={(e) => setMotherboard(e.currentTarget.value)}
               required
               mb="sm"
+              className={classes.inputField}
             />
             <TextInput
               label="PSU"
@@ -128,32 +120,29 @@ const DeviceForm: React.FC = () => {
               onChange={(e) => setPsu(e.currentTarget.value)}
               required
               mb="md"
+              className={classes.inputField}
             />
             <Group justify="space-between" mt="lg">
               <Anchor size="sm" c="dimmed">
                 <Center inline>
                   <IconArrowLeft style={{ width: rem(12), height: rem(12) }} stroke={1.5} />
-                  <Box onClick={() => setDevice(null)} ml={5}>Back to device selection</Box>
+                  <Box onClick={() => setDevice(null)} ml={5}>
+                    Back to device selection
+                  </Box>
                 </Center>
               </Anchor>
               <Button
                 onClick={handleSubmit}
-                styles={(theme) => ({
-                  root: {
-                    backgroundColor: theme.colors.blue[6],
-                    ':hover': {
-                      backgroundColor: theme.colors.blue[7],
-                    },
-                  },
-                })}
+                className={classes.button}
               >
                 Submit
               </Button>
             </Group>
           </>
         )}
-      </Paper>
+      </div>
     </Container>
+    </div>
   );
 };
 

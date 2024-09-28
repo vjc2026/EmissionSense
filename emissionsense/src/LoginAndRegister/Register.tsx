@@ -33,15 +33,15 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className={classes.container}>
-      <Container size={460} my={30}>
-        <Title className={classes.title} ta="center">
+      <Container size={460} my={30} className={classes.formContainer}>
+        <Title className={classes.title} ta="center" style={{ textShadow: '1px 1px 10px rgba(0, 0, 0, 0.6)' }}>
           Create your Account.
         </Title>
-        <Text c="white" fz="sm" ta="center">
+        <Text c="white" fz="sm" ta="center" style={{ textShadow: '1px 1px 10px rgba(0, 0, 0, 0.6)' }}>
           Enter your information.
         </Text>
 
-        <div className={classes.formContainer}>
+        <div className={classes.formContent}>
           <TextInput
             label="Your email"
             placeholder="Enter your email"

@@ -1,4 +1,14 @@
-import {Paper,TextInput,PasswordInput,Checkbox,Button,Title,Text,Anchor,Group,Container,} from '@mantine/core';
+import {
+  TextInput,
+  PasswordInput,
+  Checkbox,
+  Button,
+  Title,
+  Text,
+  Anchor,
+  Group,
+  Container,
+} from '@mantine/core';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classes from './Login.module.css';
@@ -23,9 +33,7 @@ const LoginPage: React.FC = () => {
         }),
       });
 
-
       const result = await response.json();
-
 
       if (response.ok) {
         // Store the token in localStorage
@@ -42,10 +50,6 @@ const LoginPage: React.FC = () => {
 
   const handleRegister = () => {
     navigate('/register');
-  };
-
-  const handleForgotPassword = () => {
-    navigate('/forgot-password'); // Navigate to Forgot Password page
   };
 
   return (
@@ -81,10 +85,9 @@ const LoginPage: React.FC = () => {
           />
           <Group justify="space-between" mt="lg">
             <Checkbox label="Remember me" style={{ color: 'white' }} />
-            <Anchor component="button" style={{ color: 'green' }} size="sm" onClick={() => navigate('/forgot-password')}>
-  Forgot password?
-</Anchor>
-
+            <Anchor component="button" style={{ color: 'green' }} size="sm">
+              Forgot password?
+            </Anchor>
           </Group>
           {error && <Text color="red" size="sm" ta="center" mt="md">{error}</Text>}
           <Button fullWidth mt="xl" color="green" onClick={handleLogin}>

@@ -2,11 +2,10 @@ import React from 'react';
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import { AppShell, Burger, Flex, Button } from '@mantine/core';
 import LoginPage from './LoginAndRegister/Login';
-import Register from './LoginAndRegister/Register';
-import Proceed from './LoginAndRegister/Proceed';
-import ForgotPasswordPage from './LoginAndRegister/ForgotPasswordPage'; // Import Forgot Password
 import ButtonComponent from './Components/Button';
 import TextComponent from './Components/Text';
+import Register from './LoginAndRegister/Register';
+import Proceed from './LoginAndRegister/Proceed';
 import '@mantine/core/styles.css';
 
 const ProtectedRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
@@ -56,7 +55,6 @@ const App: React.FC = () => {
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} /> {/* Add the forgot password route */}
       {/* Protect the /main route */}
       <Route path="/main" element={<ProtectedRoute element={<MainContent />} />} />
       <Route path="/proceed" element={<Proceed />} />
