@@ -7,6 +7,7 @@ import TextComponent from './Components/Text';
 import Register from './LoginAndRegister/Register';
 import Proceed from './LoginAndRegister/Proceed';
 import '@mantine/core/styles.css';
+import StatisticsComponent from './Components/Statistics';
 
 const ProtectedRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
   const token = localStorage.getItem('token');
@@ -31,9 +32,9 @@ const MainContent: React.FC = () => {
       padding="md"
     >
       <AppShell.Header>
-        <Flex justify="space-between" align='center' style={{ padding: '10px 20px' }}>
-          <Burger opened={opened} onClick={() => setOpened(!opened)} hiddenFrom='sm' size="sm" />
-          <div>Emission Sense Testing Code</div>
+        <Flex justify="space-between" align="center" style={{ padding: '10px 20px' }}>
+          <Burger opened={opened} onClick={() => setOpened(!opened)} hiddenFrom="sm" size="sm" />
+          <div>Emission Sense</div>
           <Button onClick={handleLogout}>LogOut</Button>
         </Flex>
       </AppShell.Header>
@@ -41,10 +42,13 @@ const MainContent: React.FC = () => {
       <AppShell.Navbar p="md" style={{ gap: "10px" }}>
         <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>Text Component</Button>
         <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Button Component</Button>
+        <Button onClick={() => setCurrentComponent('component3')} style={{ margin: '5px' }}>Statistics</Button>
       </AppShell.Navbar>
 
       <AppShell.Main>
-        {currentComponent === "component1" ? <ButtonComponent /> : <TextComponent />}
+        {currentComponent === 'component1' && <TextComponent />}
+        {currentComponent === 'component2' && <ButtonComponent />}
+        {currentComponent === 'component3' && <StatisticsComponent />}
       </AppShell.Main>
     </AppShell>
   );
