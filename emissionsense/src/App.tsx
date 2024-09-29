@@ -49,6 +49,7 @@ const MainContent: React.FC = () => {
         {currentComponent === 'component1' && <TextComponent />}
         {currentComponent === 'component2' && <ButtonComponent />}
         {currentComponent === 'component3' && <StatisticsComponent />}
+        asdasdasasasdasd
       </AppShell.Main>
     </AppShell>
   );
