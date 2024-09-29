@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const si = require('systeminformation'); // Import systeminformation package
 require('dotenv').config();
 
 const app = express();
@@ -59,6 +60,28 @@ app.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Error inserting data into the database:', error);
     res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Endpoint to fetch device specifications
+app.get('/device-specs', async (req, res) => {
+  try {
+    const cpuInfo = await si.cpu();
+    const ramInfo = await si.mem();
+    const gpuInfo = await si.graphics();
+    const motherboardInfo = await si.baseboard();
+
+    // Format and send the response
+    res.json({
+      cpu: `${cpuInfo.manufacturer} ${cpuInfo.brand}`,
+      gpu: gpuInfo.controllers.length > 0 ? gpuInfo.controllers[0].model : 'No GPU Found',
+      ram: (ramInfo.total / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+      motherboard: motherboardInfo.model, // Assuming model has the info you need
+      psu: 'PSU info here' // Placeholder for PSU, as this info isn't typically available
+    });
+  } catch (error) {
+    console.error('Error fetching device specifications:', error);
+    res.status(500).json({ error: 'Error fetching device specifications' });
   }
 });
 

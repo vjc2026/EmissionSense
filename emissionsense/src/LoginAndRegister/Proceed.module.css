@@ -35,18 +35,16 @@
 .button {
   width: 100%;
   margin-top: 8px;
-  background-color: #1c7ed6;
+  background-color: #008000;
   color: white;
   transition: background-color 0.2s ease;
 }
 
 .button:hover {
-  background-color: #155fa0;
+  background-color: #1be41b;
 }
 
 .inputField {
   margin-top: 8px;
-  background-color: #373a40;
-  border-color: #2f3034;
   color: white;
 }
