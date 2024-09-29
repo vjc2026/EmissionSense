@@ -1,15 +1,16 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const si = require('systeminformation'); // Import systeminformation package
+const { OAuth2Client } = require('google-auth-library'); // Import Google Auth Library
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = 'your_secret_key'; // Replace with a strong secret key
+const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // Replace with your Google client ID
 
 // MongoDB Atlas connection
 const MONGO_URI = 'mongodb+srv://vscodejcv:k7ljIx9GPmVQnpNX@cluster0.gv0gw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
@@ -101,6 +102,38 @@ app.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Error querying the database:', error);
     res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// Google login endpoint
+const client = new OAuth2Client(CLIENT_ID);
+
+app.post('/google-login', async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload.email;
+
+    // Check if the user already exists in the database
+    let user = await User.findOne({ email });
+    if (!user) {
+      // If the user doesn't exist, create a new user
+      user = new User({ email });
+      await user.save();
+    }
+
+    // Generate a JWT token
+    const jwtToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
+    res.status(200).json({ message: 'Google login successful', token: jwtToken });
+  } catch (error) {
+    console.error('Error during Google login:', error);
+    res.status(401).json({ error: 'Google login failed' });
   }
 });
 

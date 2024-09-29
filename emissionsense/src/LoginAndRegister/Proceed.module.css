@@ -3,7 +3,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-image: url(https://i.pinimg.com/originals/a3/51/9b/a3519b226385b9b59e734e6dfb9e7b65.jpg);
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.705)), /* Black overlay with slight opacity */
+    url(https://i.pinimg.com/originals/a3/51/9b/a3519b226385b9b59e734e6dfb9e7b65.jpg);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

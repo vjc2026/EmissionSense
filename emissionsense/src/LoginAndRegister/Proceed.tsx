@@ -36,6 +36,9 @@ const DeviceForm: React.FC = () => {
       console.error('Error fetching device specifications:', error);
     }
   };
+  const handleLogin = () => {
+    navigate('/register'); // Change this to your actual login route
+  };
 
   // Function to handle form submission to save data to the database
   const handleSubmit = async () => {
@@ -68,13 +71,14 @@ const DeviceForm: React.FC = () => {
         <Title ta="center" className={classes.heading} style={{ backround: 'transparent' }}>
           {device ? `Device: ${device}` : 'Select your Device'}
         </Title>
-        <Text c="dimmed" fz="sm" ta="center">
+        <Text c="dimmed" fz="sm" ta="center" style={{color: 'white'}}>
           {device ? 'Enter your information below' : 'Choose a device type to continue'}
         </Text>
 
         <div className={classes.formContainer}>
           {!device ? (
             <Group ta="center" mt="md">
+
               <Button
                 fullWidth
                 size="md"
@@ -93,6 +97,14 @@ const DeviceForm: React.FC = () => {
               >
                 Laptop
               </Button>
+              <Anchor c="dimmed" size="sm" className={classes.control}>
+              <Center inline>
+                <IconArrowLeft style={{ width: rem(12), color: 'white', height: rem(12) }} stroke={1.5} />
+                <Box onClick={handleLogin} ml={5} style={{ color: 'white' }}>
+                  Go Back
+                </Box>
+              </Center>
+            </Anchor>
             </Group>
           ) : (
             <>
@@ -154,8 +166,8 @@ const DeviceForm: React.FC = () => {
               <Group justify="space-between" mt="lg">
                 <Anchor size="sm" c="dimmed">
                   <Center inline>
-                    <IconArrowLeft style={{ width: rem(12), height: rem(12) }} stroke={1.5} />
-                    <Box onClick={() => setDevice(null)} ml={5}>
+                    <IconArrowLeft style={{ width: rem(12), height: rem(12) }} color='white' stroke={1.5} />
+                    <Box onClick={() => setDevice(null)} ml={5} style={{ color: 'white' }}>
                       Back to device selection
                     </Box>
                   </Center>

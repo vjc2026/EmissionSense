@@ -1,4 +1,16 @@
-import { Title, Text, TextInput, Button, Container, Group, Anchor, Center, Box, rem, PasswordInput } from '@mantine/core';
+import {
+  Title,
+  Text,
+  TextInput,
+  Button,
+  Container,
+  Group,
+  Anchor,
+  Center,
+  Box,
+  rem,
+  PasswordInput
+} from '@mantine/core';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classes from './Register.module.css';
@@ -12,8 +24,9 @@ const RegisterPage: React.FC = () => {
   const [organization, setOrganization] = useState('');
   const navigate = useNavigate();
 
+  // Corrected handleLogin function to navigate to the login page
   const handleLogin = () => {
-    navigate('/');
+    navigate('/'); // Change this to your actual login route
   };
 
   const handleProceed = () => {
@@ -48,6 +61,7 @@ const RegisterPage: React.FC = () => {
             value={email}
             onChange={(e) => setEmail(e.currentTarget.value)}
             required
+            style={{ color: 'white' }}
           />
           <PasswordInput
             label="Password"
@@ -56,6 +70,7 @@ const RegisterPage: React.FC = () => {
             value={password}
             onChange={(e) => setPassword(e.currentTarget.value)}
             required
+            style={{ color: 'white' }}
           />
           <PasswordInput
             label="Confirm Password"
@@ -64,6 +79,7 @@ const RegisterPage: React.FC = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.currentTarget.value)}
             required
+            style={{ color: 'white' }}
           />
           <TextInput
             label="Organization"
@@ -72,12 +88,13 @@ const RegisterPage: React.FC = () => {
             value={organization}
             onChange={(e) => setOrganization(e.currentTarget.value)}
             required
+            style={{ color: 'white' }}
           />
           <Group justify="space-between" className={classes.controls}>
             <Anchor c="dimmed" size="sm" className={classes.control}>
               <Center inline>
-                <IconArrowLeft style={{ width: rem(12), height: rem(12) }} stroke={1.5} />
-                <Box onClick={handleLogin} ml={5}>
+                <IconArrowLeft style={{ width: rem(12), color: 'white', height: rem(12) }} stroke={1.5} />
+                <Box onClick={handleLogin} ml={5} style={{ color: 'white' }}>
                   Back to the login page
                 </Box>
               </Center>
