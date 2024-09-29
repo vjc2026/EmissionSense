@@ -1,4 +1,4 @@
-import { Overlay, Container, Title, Button, Text } from '@mantine/core';
+import { Overlay, Container, Title, Button, Text, Card, Image, Group, Badge } from '@mantine/core';
 import classes from './Button.module.css';
 
 export function ButtonComponent() {
@@ -21,6 +21,8 @@ export function ButtonComponent() {
         </Button>
       </Container>
     </div>
+
+
   );
 }
 

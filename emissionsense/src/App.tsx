@@ -6,6 +6,7 @@ import ButtonComponent from './Components/Button';
 import TextComponent from './Components/Text';
 import Register from './LoginAndRegister/Register';
 import Proceed from './LoginAndRegister/Proceed';
+import History from './Components/history';
 import '@mantine/core/styles.css';
 import StatisticsComponent from './Components/Statistics';
 
@@ -40,15 +41,17 @@ const MainContent: React.FC = () => {
       </AppShell.Header>
 
       <AppShell.Navbar p="md" style={{ gap: "10px" }}>
-        <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>Text Component</Button>
-        <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Button Component</Button>
+        <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>DashBoard</Button>
+        <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Profile Page</Button>
         <Button onClick={() => setCurrentComponent('component3')} style={{ margin: '5px' }}>Statistics</Button>
+        <Button onClick={() => setCurrentComponent('component4')} style={{ margin: '5px' }}>Hisory</Button>
       </AppShell.Navbar>
 
       <AppShell.Main>
         {currentComponent === 'component1' && <TextComponent />}
         {currentComponent === 'component2' && <ButtonComponent />}
         {currentComponent === 'component3' && <StatisticsComponent />}
+        {currentComponent === 'component4' && <History />}
       </AppShell.Main>
     </AppShell>
   );
