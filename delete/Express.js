@@ -86,13 +86,11 @@ app.get('/', (req, res) => {
   });
 });
 
-// Handle user edits
 app.post('/edit', (req, res) => {
   const userId = req.body.id;
   res.send(`<h1>Edit user with ID: ${userId}</h1>`);
 });
 
-// Handle user deletions
 app.post('/delete', (req, res) => {
   const userId = req.body.id;
   db.query('DELETE FROM users WHERE id = ?', [userId], (err) => {
