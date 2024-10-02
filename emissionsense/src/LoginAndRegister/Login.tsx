@@ -53,12 +53,19 @@ const LoginPage: React.FC = () => {
     navigate('/register');
   };
 
+  const testRegister = () => {
+    navigate('/register');
+  };
+
   return (
     <div className={classes.container}>
       <div className={classes.left}>
         <Container size={420} my={40}>
           <Title ta="center" className={classes.title} style={{ color: 'white' }}>
             Welcome back!
+            <Button fullWidth mt="xl" color="green" onClick={testRegister}>
+            TEST
+          </Button>
           </Title>
           <Text c="dimmed" size="sm" ta="center" mt={5}>
             Do not have an account yet?{' '}

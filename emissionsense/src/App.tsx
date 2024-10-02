@@ -1,12 +1,15 @@
 import React from 'react';
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
-import { AppShell, Burger, Flex, Button } from '@mantine/core';
+import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, rem } from '@mantine/core';
 import LoginPage from './LoginAndRegister/Login';
 import ButtonComponent from './Components/Button';
 import TextComponent from './Components/Text';
 import Register from './LoginAndRegister/Register';
 import Proceed from './LoginAndRegister/Proceed';
 import History from './Components/history';
+import TEST from './Components/TEST';
+import classes from './Components/TEST.module.css'
+import { IconBoxPadding, IconCaretDownFilled  } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import StatisticsComponent from './Components/Statistics';
 
@@ -41,6 +44,20 @@ const MainContent: React.FC = () => {
       </AppShell.Header>
 
       <AppShell.Navbar p="md" style={{ gap: "10px" }}>
+        <UnstyledButton className={classes.user} style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+          <Avatar
+            src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
+            radius="xl"
+            size={100} // Increase the size of the profile picture
+          />
+          <Text size="md" fw={700}>
+            Aaron Jay C. Bautista
+            <IconCaretDownFilled style={{ width: 20, height: 16, paddingTop: 5} } stroke={2} />
+          </Text>
+          <Text c="dimmed" size="sm">
+            Organization
+          </Text>
+        </UnstyledButton>
         <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>DashBoard</Button>
         <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Profile Page</Button>
         <Button onClick={() => setCurrentComponent('component3')} style={{ margin: '5px' }}>Statistics</Button>
@@ -65,6 +82,7 @@ const App: React.FC = () => {
       {/* Protect the /main route */}
       <Route path="/main" element={<ProtectedRoute element={<MainContent />} />} />
       <Route path="/proceed" element={<Proceed />} />
+      <Route path="/test" element={<TEST />} />
     </Routes>
   );
 };
