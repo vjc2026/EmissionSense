@@ -1,28 +1,92 @@
-import { Overlay, Container, Title, Button, Text, Card, Image, Group, Badge } from '@mantine/core';
-import classes from './Button.module.css';
+import { Container, Title, Button, Text, Card, Image, Group, Badge, Grid, Progress } from '@mantine/core';
+import { IconGlobe, IconBrandGithub, IconBrandTwitter, IconBrandInstagram, IconBrandFacebook } from '@tabler/icons-react';
 
 export function ButtonComponent() {
   return (
-    <div className={classes.hero}>
-      <Overlay
-        gradient="linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, .65) 40%)"
-        opacity={1}
-        zIndex={0}
-      />
-      <Container className={classes.container} size="md">
-        <Title className={classes.title}>A fully featured React components library</Title>
-        <Text className={classes.description} size="xl" mt="xl">
-          Build fully functional accessible web applications faster than ever – Mantine includes
-          more than 120 customizable components and hooks to cover you in any situation
-        </Text>
+    <Container size="lg">
+      <Grid gutter="md">
+        {/* Left Profile Section */}
+        <Grid.Col span={4}>
+          <Card shadow="sm" padding="lg">
+            <Image
+              src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
+              alt="Profile Image"
+              radius="xl"
+              width={100}
+              height={100}
+              mx="auto"
+            />
+            <Text size="lg" style={{ align:'center', fontWeight: 700 }} mt="md">
+              John Doe
+            </Text>
+            <Text style={{ align:'center'}} size="sm" color="dimmed">
+              Full Stack Developer
+            </Text>
+            <Text style={{ align:'center'}} size="sm" color="dimmed">
+              Soma, San Francisco, CA
+            </Text>
+            <Group style={{ flexDirection: 'column', alignItems: 'center', marginTop: '1rem' }}>
+              <Button size="sm" variant="light">Follow</Button>
+              <Button size="sm" variant="outline">Message</Button>
+            </Group>
 
-        <Button variant="gradient" size="xl" radius="xl" className={classes.control}>
-          Get started
-        </Button>
-      </Container>
-    </div>
+            <Group style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: '1.5rem' }}>
+              <Button variant="subtle" fullWidth leftSection={<IconGlobe style={{ width: 20, height: 20 }} stroke={1.5} />}>
+                Website: https://bootdey.com
+              </Button>
+              <Button variant="subtle" fullWidth leftSection={<IconBrandGithub style={{ width: 20, height: 20 }} stroke={1.5} />}>
+                Github: @bootdey
+              </Button>
+              <Button variant="subtle" fullWidth leftSection={<IconBrandTwitter style={{ width: 20, height: 20 }} stroke={1.5} />}>
+                Twitter: @bootdey
+              </Button>
+              <Button variant="subtle" fullWidth leftSection={<IconBrandInstagram style={{ width: 20, height: 20 }} stroke={1.5} />}>
+                Instagram: bootdey
+              </Button>
+              <Button variant="subtle" fullWidth leftSection={<IconBrandFacebook style={{ width: 20, height: 20 }} stroke={1.5} />}>
+                Facebook: bootdey
+              </Button>
+            </Group>
+          </Card>
+        </Grid.Col>
 
+        {/* Right Information Section */}
+        <Grid.Col span={8}>
+          <Card shadow="sm" padding="lg">
+            <Title order={4} mb="sm">Full Name</Title>
+            <Text>Kenneth Valdez</Text>
 
+            <Title order={4} mt="lg" mb="sm">Email</Title>
+            <Text>fip@jukmuh.al</Text>
+
+            <Title order={4} mt="lg" mb="sm">Phone</Title>
+            <Text>(239) 816-9029</Text>
+
+            <Title order={4} mt="lg" mb="sm">Mobile</Title>
+            <Text>(320) 380-4539</Text>
+
+            <Title order={4} mt="lg" mb="sm">Address</Title>
+            <Text>Soma, San Francisco, CA</Text>
+
+            <Title order={4} mt="lg" mb="sm">
+              <Text component="span" color="blue">Assignment</Text> Project Status
+            </Title>
+            <div>
+              <Text size="sm" mt="sm">Web Design</Text>
+              <Progress value={70} color="blue" />
+              <Text size="sm" mt="sm">One Page</Text>
+              <Progress value={40} color="red" />
+              <Text size="sm" mt="sm">Mobile Template</Text>
+              <Progress value={50} color="blue" />
+              <Text size="sm" mt="sm">Backend API</Text>
+              <Progress value={80} color="blue" />
+              <Text size="sm" mt="sm">Website Markup</Text>
+              <Progress value={60} color="blue" />
+            </div>
+          </Card>
+        </Grid.Col>
+      </Grid>
+    </Container>
   );
 }
 
