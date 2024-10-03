@@ -44,7 +44,6 @@ const MainContent: React.FC = () => {
       </AppShell.Header>
 
       <AppShell.Navbar p="md" style={{ gap: "10px" }}>
-<<<<<<< HEAD
         <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>Dashboard</Button>
 =======
         <UnstyledButton className={classes.user} style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
@@ -62,7 +61,6 @@ const MainContent: React.FC = () => {
           </Text>
         </UnstyledButton>
         <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>DashBoard</Button>
->>>>>>> f573ae0db087773edcc2e240c3d884c78bcc2949
         <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Profile Page</Button>
         <Button onClick={() => setCurrentComponent('component3')} style={{ margin: '5px' }}>Statistics</Button>
         <Button onClick={() => setCurrentComponent('component4')} style={{ margin: '5px' }}>Hisory</Button>
