@@ -22,8 +22,8 @@ const MainContent: React.FC = () => {
   const [currentComponent, setCurrentComponent] = React.useState<string>('component1');
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Clear the token on logout
-    navigate('/'); // Redirect to login page
+    localStorage.removeItem('token');
+    navigate('/');
   };
 
   return (
@@ -41,7 +41,7 @@ const MainContent: React.FC = () => {
       </AppShell.Header>
 
       <AppShell.Navbar p="md" style={{ gap: "10px" }}>
-        <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>DashBoard</Button>
+        <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>Dashboard</Button>
         <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Profile Page</Button>
         <Button onClick={() => setCurrentComponent('component3')} style={{ margin: '5px' }}>Statistics</Button>
         <Button onClick={() => setCurrentComponent('component4')} style={{ margin: '5px' }}>Hisory</Button>
