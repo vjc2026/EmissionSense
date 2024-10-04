@@ -1,12 +1,136 @@
-import { Overlay, Container, Title, Button, Text, Card, Image, Group, Badge } from '@mantine/core';
+import { useState, useEffect } from 'react';
+import { Container, Button, Text, Card, Group, TextInput, Select } from '@mantine/core';
+import axios from 'axios';
 
 export function HistoryComponent() {
+  const [isActive, setIsActive] = useState(false);
+  const [time, setTime] = useState(0);
+  const [projects, setProjects] = useState<{ name: string; description: string; sessions: number[] }[]>([]);
+  const [currentProject, setCurrentProject] = useState<string | null>(null);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
+
+  
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    if (isActive && currentProject) {
+      interval = setInterval(() => {
+        setTime((prevTime) => prevTime + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval!);
+      if (!isActive && time !== 0 && currentProject) {
+        const updatedProjects = projects.map((project) =>
+          project.name === currentProject
+            ? { ...project, sessions: [...project.sessions, time] }
+            : project
+        );
+
+        setProjects(updatedProjects);
+        recordSessionTime(currentProject, time);
+      }
+      setTime(0);
+    }
+
+    return () => clearInterval(interval!);
+  }, [isActive, time, currentProject, projects]);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const handleAddProject = () => {
+    if (newProjectName.trim() && newProjectDescription.trim()) {
+      const newProject = {
+        name: newProjectName,
+        description: newProjectDescription,
+        sessions: [],
+      };
+      setProjects((prevProjects) => [...prevProjects, newProject]);
+      setNewProjectName(''); 
+      setNewProjectDescription('');
+    }
+  };
+
+  const recordSessionTime = async (projectName: string, duration: number) => {
+    try {
+      await axios.post('http://your-api-url.com/user_history', {
+        user_id: 1,
+        action: `Recorded time for project: ${projectName}`,
+        duration: duration,
+        created_at: new Date(),
+      });
+    } catch (error) {
+      console.error('Error recording session time:', error);
+    }
+  };
+
   return (
-    <div>
-        BORN TO MAKE HISTORY
-    </div>
+    <Container>
+      {/* Project selection and addition */}
+      <Card shadow="sm" p="lg">
+        <Group align="apart" mt="md" mb="xs">
+          <Text>Current Project:</Text>
+          <Select
+            placeholder="Select project"
+            data={projects.map((project) => project.name)}
+            value={currentProject}
+            onChange={setCurrentProject}
+          />
+        </Group>
 
+        <TextInput
+          placeholder="New Project Name"
+          value={newProjectName}
+          onChange={(event) => setNewProjectName(event.currentTarget.value)}
+        />
+        <TextInput
+          placeholder="New Project Description"
+          value={newProjectDescription}
+          onChange={(event) => setNewProjectDescription(event.currentTarget.value)}
+        />
+        <Button onClick={handleAddProject} mt="sm">Add Project</Button>
 
+        <Text size="sm" color="dimmed" mt="sm">
+          {currentProject ? `Description: ${projects.find((p) => p.name === currentProject)?.description}` : 'No project selected'}
+        </Text>
+      </Card>
+
+      {/* Timer controls */}
+      <Card shadow="sm" p="lg" mt="lg">
+        <Group align="center" mt="lg">
+          <Text size="xl">Current Session Time: {formatTime(time)}</Text>
+        </Group>
+
+        <Group align="center" mt="lg">
+          <Button onClick={() => setIsActive((prev) => !prev)}>
+            {isActive ? 'Stop Session' : 'Start Session'}
+          </Button>
+        </Group>
+      </Card>
+
+      {/* Display session history for the selected project */}
+      <Card shadow="sm" p="lg" mt="lg">
+        <Text>Session History</Text>
+        {currentProject && projects.length > 0 ? (
+          projects.find((p) => p.name === currentProject)?.sessions.length === 0 ? (
+            <Text size="sm" color="dimmed">No sessions recorded for this project yet.</Text>
+          ) : (
+            projects.find((p) => p.name === currentProject)?.sessions.map((sessionTime, index) => (
+              <Text key={index}>
+                Session #{index + 1}: {formatTime(sessionTime)}
+              </Text>
+            ))
+          )
+        ) : (
+          <Text size="sm" color="dimmed">Select a project to see session history.</Text>
+        )}
+      </Card>
+    </Container>
   );
 }
 

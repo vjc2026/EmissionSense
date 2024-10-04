@@ -1,5 +1,4 @@
 import {
-  Paper,
   TextInput,
   PasswordInput,
   Checkbox,
@@ -18,7 +17,7 @@ import { GoogleButton } from './GoogleButton';
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(''); // State for error message
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -37,15 +36,14 @@ const LoginPage: React.FC = () => {
       const result = await response.json();
 
       if (response.ok) {
-        // Store the token in localStorage
         localStorage.setItem('token', result.token);
         navigate('/main');
       } else {
-        setError(result.error || 'Login failed'); // Set error message
+        setError(result.error || 'Login failed');
       }
     } catch (error) {
       console.error('Error:', error);
-      setError('An error occurred. Please try again later.'); // Set error message
+      setError('An error occurred. Please try again later.');
     }
   };
 

@@ -45,12 +45,11 @@ const MainContent: React.FC = () => {
 
       <AppShell.Navbar p="md" style={{ gap: "10px" }}>
         <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>Dashboard</Button>
-=======
         <UnstyledButton className={classes.user} style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
           <Avatar
             src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
             radius="xl"
-            size={100} // Increase the size of the profile picture
+            size={100}
           />
           <Text size="md" fw={700}>
             Aaron Jay C. Bautista

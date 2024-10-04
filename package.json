@@ -1,8 +1,11 @@
 {
   "dependencies": {
+    "@mantine/core": "^7.13.2",
+    "@mantine/hooks": "^7.13.2",
     "@react-oauth/google": "^0.12.1",
     "google-auth-library": "^9.14.1",
-    "react-google-login": "^5.2.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "systeminformation": "^5.23.5"
   },
   "devDependencies": {
