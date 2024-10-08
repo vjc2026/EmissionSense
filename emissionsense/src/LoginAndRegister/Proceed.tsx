@@ -18,7 +18,7 @@ const DeviceForm: React.FC = () => {
   const [psu, setPsu] = useState('');
 
   // Extracting user details passed from Register.tsx
-  const { email, password, organization } = location.state || {};
+  const { name, email, password, organization } = location.state || {};
 
   // Function to fetch device specifications
   const fetchDeviceSpecifications = async () => {
@@ -44,6 +44,7 @@ const DeviceForm: React.FC = () => {
   const handleSubmit = async () => {
     try {
       const response = await axios.post('http://localhost:5000/register', {
+        name,
         email,
         password,
         organization,

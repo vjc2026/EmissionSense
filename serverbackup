@@ -6,6 +6,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
+const si = require('systeminformation'); // Import systeminformation package
 require('dotenv').config();
 
 const app = express();
@@ -34,7 +35,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Endpoint to insert user data into the database
+// Endpoint to insert user data into the MySQL database
 app.post('/register', (req, res) => {
   const { email, password, organization, device, cpu, gpu, ram, motherboard, psu } = req.body;
 
@@ -42,7 +43,7 @@ app.post('/register', (req, res) => {
     INSERT INTO users (email, password, organization, device, cpu, gpu, ram, motherboard, psu)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  
+
   connection.query(query, [email, password, organization, device, cpu, gpu, ram, motherboard, psu], (err, results) => {
     if (err) {
       console.error('Error inserting data into the database:', err);
@@ -53,6 +54,28 @@ app.post('/register', (req, res) => {
   });
 });
 
+// Endpoint to fetch device specifications
+app.get('/device-specs', async (req, res) => {
+  try {
+    const cpuInfo = await si.cpu();
+    const ramInfo = await si.mem();
+    const gpuInfo = await si.graphics();
+    const motherboardInfo = await si.baseboard();
+
+    // Format and send the response
+    res.json({
+      cpu: `${cpuInfo.manufacturer} ${cpuInfo.brand}`,
+      gpu: gpuInfo.controllers.length > 0 ? gpuInfo.controllers[0].model : 'No GPU Found',
+      ram: (ramInfo.total / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
+      motherboard: motherboardInfo.model, // Assuming model has the info you need
+      psu: 'PSU info here' // Placeholder for PSU, as this info isn't typically available
+    });
+  } catch (error) {
+    console.error('Error fetching device specifications:', error);
+    res.status(500).json({ error: 'Error fetching device specifications' });
+  }
+});
+
 // Login endpoint
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
@@ -60,7 +83,7 @@ app.post('/login', (req, res) => {
   const query = `
     SELECT * FROM users WHERE email = ? AND password = ?
   `;
-  
+
   connection.query(query, [email, password], (err, results) => {
     if (err) {
       console.error('Error querying the database:', err);

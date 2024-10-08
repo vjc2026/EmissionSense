@@ -2,66 +2,53 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
+const mysql = require('mysql2');
 const si = require('systeminformation'); // Import systeminformation package
-const { OAuth2Client } = require('google-auth-library'); // Import Google Auth Library
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = 'your_secret_key'; // Replace with a strong secret key
-const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // Replace with your Google client ID
+const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key'; // Use environment variable for secret key
 
-// MongoDB Atlas connection
-const MONGO_URI = 'mongodb+srv://vscodejcv:k7ljIx9GPmVQnpNX@cluster0.gv0gw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+// Create MySQL connection
+const connection = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+});
 
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch((err) => console.error('Error connecting to MongoDB:', err));
+connection.connect((err) => {
+  if (err) {
+    console.error('Error connecting to MySQL:', err);
+    return;
+  }
+  console.log('Connected to MySQL database');
+});
 
 // Use cors middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Define a Mongoose Schema and Model for users
-const userSchema = new mongoose.Schema({
-  email: String,
-  password: String,
-  organization: String,
-  device: String,
-  cpu: String,
-  gpu: String,
-  ram: String,
-  motherboard: String,
-  psu: String,
-});
+// Endpoint to insert user data into the MySQL database
+app.post('/register', (req, res) => {
+  const { name, email, password, organization, device, cpu, gpu, ram, motherboard, psu } = req.body;
 
-const User = mongoose.model('User', userSchema);
+  const query = `
+    INSERT INTO users (name, email, password, organization, device, cpu, gpu, ram, motherboard, psu)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
 
-// Endpoint to insert user data into the MongoDB database
-app.post('/register', async (req, res) => {
-  const { email, password, organization, device, cpu, gpu, ram, motherboard, psu } = req.body;
+  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, motherboard, psu], (err, results) => {
+    if (err) {
+      console.error('Error inserting data into the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
 
-  const newUser = new User({
-    email,
-    password,
-    organization,
-    device,
-    cpu,
-    gpu,
-    ram,
-    motherboard,
-    psu,
-  });
-
-  try {
-    await newUser.save();
     res.status(200).json({ message: 'User registered successfully' });
-  } catch (error) {
-    console.error('Error inserting data into the database:', error);
-    res.status(500).json({ error: 'Database error' });
-  }
+  });
 });
 
 // Endpoint to fetch device specifications
@@ -87,54 +74,27 @@ app.get('/device-specs', async (req, res) => {
 });
 
 // Login endpoint
-app.post('/login', async (req, res) => {
+app.post('/login', (req, res) => {
   const { email, password } = req.body;
 
-  try {
-    const user = await User.findOne({ email, password });
-    if (user) {
-      // Generate a JWT token
-      const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
-      res.status(200).json({ message: 'Login successful', token });
+  const query = `
+    SELECT id, name, email FROM users WHERE email = ? AND password = ?
+  `;
+
+  connection.query(query, [email, password], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      const user = results[0]; // Get the first user record
+      const token = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: '1h' });
+      res.status(200).json({ message: 'Login successful', token, userId: user.id, name: user.name, email: user.email });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
     }
-  } catch (error) {
-    console.error('Error querying the database:', error);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// Google login endpoint
-const client = new OAuth2Client(CLIENT_ID);
-
-app.post('/google-login', async (req, res) => {
-  const { token } = req.body;
-
-  try {
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
-    });
-
-    const payload = ticket.getPayload();
-    const email = payload.email;
-
-    // Check if the user already exists in the database
-    let user = await User.findOne({ email });
-    if (!user) {
-      // If the user doesn't exist, create a new user
-      user = new User({ email });
-      await user.save();
-    }
-
-    // Generate a JWT token
-    const jwtToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ message: 'Google login successful', token: jwtToken });
-  } catch (error) {
-    console.error('Error during Google login:', error);
-    res.status(401).json({ error: 'Google login failed' });
-  }
+  });
 });
 
 // Middleware to protect routes
@@ -151,6 +111,86 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Endpoint to fetch user's name and email after login
+app.get('/user', authenticateToken, (req, res) => {
+  const { email } = req.user;
+
+  const query = `
+    SELECT name, email FROM users WHERE email = ?
+  `;
+
+  connection.query(query, [email], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      res.status(200).json({ user: results[0] }); // Send back user details
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  });
+});
+
+app.post('/user_history', authenticateToken, (req, res) => {
+  const { projectName, projectDescription, sessionDuration } = req.body;
+  const userId = req.user.id; // Get the user ID from the authenticated token
+
+  const query = `
+    INSERT INTO user_history (user_id, project_name, project_description, session_duration)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  connection.query(query, [userId, projectName, projectDescription, sessionDuration], (err, results) => {
+    if (err) {
+      console.error('Error inserting session data into the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ message: 'Session recorded successfully' });
+  });
+});
+
+// Endpoint to fetch user's projects
+app.get('/user_projects', authenticateToken, (req, res) => {
+  const userId = req.user.id; // Get the user ID from the authenticated token
+
+  const query = `
+    SELECT id, project_name, project_description FROM user_history WHERE user_id = ?
+  `;
+
+  connection.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ projects: results }); // Send back user's projects
+  });
+});
+
+// Endpoint to delete a project
+app.delete('/delete_project/:id', authenticateToken, (req, res) => {
+  const projectId = req.params.id; // Get project ID from request parameters
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `
+    DELETE FROM user_history WHERE id = ? AND user_id = ?
+  `;
+
+  connection.query(query, [projectId, userId], (err, results) => {
+    if (err) {
+      console.error('Error deleting project from the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ message: 'Project deleted successfully' });
+  });
+});
+
+
+// Example of a protected route
 app.get('/protected', authenticateToken, (req, res) => {
   res.status(200).json({ message: 'This is a protected route', user: req.user });
 });

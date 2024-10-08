@@ -12,7 +12,6 @@ import {
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classes from './Login.module.css';
-import { GoogleButton } from './GoogleButton';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -52,7 +51,7 @@ const LoginPage: React.FC = () => {
   };
 
   const testRegister = () => {
-    navigate('/register');
+    navigate('/TEST');
   };
 
   return (
@@ -99,9 +98,7 @@ const LoginPage: React.FC = () => {
           <Button fullWidth mt="xl" color="green" onClick={handleLogin}>
             Sign in
           </Button>
-          <GoogleButton fullWidth mt="xl">
-            Sign in with Google
-          </GoogleButton>
+          
         </Container>
       </div>
 

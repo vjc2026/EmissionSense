@@ -18,6 +18,7 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import { GoogleButton } from './GoogleButton';
 
 const RegisterPage: React.FC = () => {
+  const [name, setName] = useState(''); // New state for user name
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,13 +31,14 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleProceed = () => {
-    if (!email || !password || !organization || password !== confirmPassword) {
+    if (!name || !email || !password || !organization || password !== confirmPassword) {
       alert('Please fill all fields and ensure the passwords match.');
       return;
     }
 
     navigate('/proceed', {
       state: {
+        name, // Include the user's name
         email,
         password,
         organization,
@@ -56,7 +58,16 @@ const RegisterPage: React.FC = () => {
 
         <div className={classes.formContent}>
           <TextInput
+            label="Name"
+            placeholder="Enter your name"
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+            required
+            style={{ color: 'white' }}
+          />
+          <TextInput
             label="Your email"
+            className={classes.text}
             placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.currentTarget.value)}
