@@ -62,7 +62,7 @@ const MainContent: React.FC = () => {
         <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>DashBoard</Button>
         <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Profile Page</Button>
         <Button onClick={() => setCurrentComponent('component3')} style={{ margin: '5px' }}>Statistics</Button>
-        <Button onClick={() => setCurrentComponent('component4')} style={{ margin: '5px' }}>Hisory</Button>
+        <Button onClick={() => setCurrentComponent('component4')} style={{ margin: '5px' }}>History</Button>
       </AppShell.Navbar>
 
       <AppShell.Main>
