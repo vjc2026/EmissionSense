@@ -9,7 +9,10 @@ import {
   Center,
   Box,
   rem,
-  PasswordInput
+  PasswordInput,
+  FileInput,
+  Avatar,
+  Tooltip,
 } from '@mantine/core';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -18,16 +21,79 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import { GoogleButton } from './GoogleButton';
 
 const RegisterPage: React.FC = () => {
-  const [name, setName] = useState(''); // New state for user name
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [organization, setOrganization] = useState('');
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Corrected handleLogin function to navigate to the login page
   const handleLogin = () => {
-    navigate('/'); // Change this to your actual login route
+    navigate('/');
+  };
+
+  const compressImage = (file: File, quality: number): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          if (ctx) {
+            // Resize the canvas to the dimensions of the image
+            const maxWidth = 800; // Set maximum width
+            const maxHeight = 800; // Set maximum height
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > maxWidth) {
+                height *= maxWidth / width;
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width *= maxHeight / height;
+                height = maxHeight;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Compress the image to a Blob
+            canvas.toBlob((blob) => {
+              if (blob) {
+                resolve(new File([blob], file.name, { type: file.type }));
+              } else {
+                resolve(file); // Fallback in case blob generation fails
+              }
+            }, file.type, quality);
+          }
+        };
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleProfilePictureChange = async (file: File | null) => {
+    if (file) {
+      const compressedFile = await compressImage(file, 0.8); // Compress to 80% quality
+      setProfilePicture(compressedFile);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setProfilePicturePreview(reader.result as string);
+      };
+      reader.readAsDataURL(compressedFile);
+    } else {
+      setProfilePicturePreview(null);
+    }
   };
 
   const handleProceed = () => {
@@ -38,10 +104,11 @@ const RegisterPage: React.FC = () => {
 
     navigate('/proceed', {
       state: {
-        name, // Include the user's name
+        name,
         email,
         password,
         organization,
+        profilePicture,
       },
     });
   };
@@ -57,8 +124,35 @@ const RegisterPage: React.FC = () => {
         </Text>
 
         <div className={classes.formContent}>
+          <Text c="white" fz="sm" ta="center" style={{ marginBottom: '0.5rem' }}>
+            Customize Profile Picture (optional)
+          </Text>
+          <Center>
+            <Tooltip label="Input Profile Picture" withArrow position="top">
+              <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => document.getElementById('file-input')?.click()}>
+                <Avatar
+                  size={120}
+                  radius={120}
+                  src={profilePicturePreview}
+                  alt="Profile Picture"
+                  style={{ border: '2px solid white' }}
+                />
+                <FileInput
+                  id="file-input" // Give the input an ID
+                  label="Profile Picture"
+                  placeholder="Upload your profile picture"
+                  onChange={handleProfilePictureChange}
+                  accept="image/*"
+                  className={classes.text}
+                  style={{ display: 'none' }} // Hide the actual input
+                />
+              </div>
+            </Tooltip>
+          </Center>
+
           <TextInput
             label="Name"
+            className={classes.text}
             placeholder="Enter your name"
             value={name}
             onChange={(e) => setName(e.currentTarget.value)}
@@ -101,6 +195,7 @@ const RegisterPage: React.FC = () => {
             required
             style={{ color: 'white' }}
           />
+
           <Group justify="space-between" className={classes.controls}>
             <Anchor c="dimmed" size="sm" className={classes.control}>
               <Center inline>
