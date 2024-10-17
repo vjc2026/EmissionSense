@@ -157,7 +157,7 @@ app.get('/user_projects', authenticateToken, (req, res) => {
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
-    SELECT id, project_name, project_description FROM user_history WHERE user_id = ?
+    SELECT id, project_name, project_description, session_duration FROM user_history WHERE user_id = ?
   `;
 
   connection.query(query, [userId], (err, results) => {

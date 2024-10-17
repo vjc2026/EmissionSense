@@ -1,10 +1,71 @@
-.user {
-    display: block;
-    width: 100%;
-    padding: var(--mantine-spacing-md);
-    color: light-dark(var(--mantine-color-black), var(--mantine-color-dark-0));
-  
-    @mixin hover {
-      background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
-    }
-  }
+.profileContainer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.leftSection {
+  width: 25%;
+}
+
+.rightSection {
+  width: 70%;
+}
+
+.profileCard {
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.avatar {
+  width: 120px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+}
+
+.profileName {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.profileTitle {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #888;
+}
+
+.profileLocation {
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.followButton, .messageButton {
+  margin-bottom: 10px;
+}
+
+.socialLinks a {
+  display: block;
+  margin-top: 5px;
+}
+
+.infoCard {
+  padding: 20px;
+}
+
+.fullName {
+  font-weight: bold;
+}
+
+.assignmentText {
+  margin-bottom: 10px;
+}
+
+.projectsList {
+  margin-top: 20px;
+}
+
+.projectCard {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+}

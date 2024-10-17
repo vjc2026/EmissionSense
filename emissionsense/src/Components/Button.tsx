@@ -71,18 +71,6 @@ export function ButtonComponent() {
             <Title order={4} mt="lg" mb="sm">
               <Text component="span" color="blue">Assignment</Text> Project Status
             </Title>
-            <div>
-              <Text size="sm" mt="sm">Web Design</Text>
-              <Progress value={70} color="blue" />
-              <Text size="sm" mt="sm">One Page</Text>
-              <Progress value={40} color="red" />
-              <Text size="sm" mt="sm">Mobile Template</Text>
-              <Progress value={50} color="blue" />
-              <Text size="sm" mt="sm">Backend API</Text>
-              <Progress value={80} color="blue" />
-              <Text size="sm" mt="sm">Website Markup</Text>
-              <Progress value={60} color="blue" />
-            </div>
           </Card>
         </Grid.Col>
       </Grid>

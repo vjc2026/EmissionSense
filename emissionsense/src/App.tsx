@@ -44,7 +44,6 @@ const MainContent: React.FC = () => {
       </AppShell.Header>
 
       <AppShell.Navbar p="md" style={{ gap: "10px" }}>
-        <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>Dashboard</Button>
         <UnstyledButton className={classes.user} style={{ textAlign: 'center', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
           <Avatar
             src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
@@ -62,7 +61,7 @@ const MainContent: React.FC = () => {
         <Button onClick={() => setCurrentComponent('component1')} style={{ margin: '5px' }}>DashBoard</Button>
         <Button onClick={() => setCurrentComponent('component2')} style={{ margin: '5px' }}>Profile Page</Button>
         <Button onClick={() => setCurrentComponent('component3')} style={{ margin: '5px' }}>Statistics</Button>
-        <Button onClick={() => setCurrentComponent('component4')} style={{ margin: '5px' }}>Hisory</Button>
+        <Button onClick={() => setCurrentComponent('component4')} style={{ margin: '5px' }}>Projects Session Tracker</Button>
       </AppShell.Navbar>
 
       <AppShell.Main>
