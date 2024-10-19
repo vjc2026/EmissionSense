@@ -25,7 +25,7 @@ export function HistoryComponent() {
   const [projects, setProjects] = useState<any[]>([]); 
   const [loading, setLoading] = useState<boolean>(true);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
-
+  
   // Modal-related state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableProject, setEditableProject] = useState<any | null>(null);
@@ -49,9 +49,7 @@ export function HistoryComponent() {
       try {
         const response = await fetch('http://localhost:5000/user', {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`, 
-          },
+          headers: { 'Authorization': `Bearer ${token}` },
         });
 
         if (response.ok) {
@@ -78,9 +76,7 @@ export function HistoryComponent() {
     try {
       const response = await fetch(`http://localhost:5000/user_projects?email=${email}`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -111,11 +107,7 @@ export function HistoryComponent() {
     setIsTimerRunning(false);
 
     const token = localStorage.getItem('token');
-    const historyData = {
-      projectName,
-      projectDescription,
-      sessionDuration,
-    };
+    const historyData = { projectName, projectDescription, sessionDuration };
 
     try {
       const response = await fetch('http://localhost:5000/user_history', {
@@ -135,11 +127,7 @@ export function HistoryComponent() {
 
         setSessionHistory(prev => [
           ...prev,
-          {
-            projectName: historyData.projectName,
-            projectDescription: historyData.projectDescription,
-            sessionDuration: historyData.sessionDuration,
-          },
+          { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration },
         ]);
       } else {
         const result = await response.json();
@@ -167,10 +155,7 @@ export function HistoryComponent() {
     if (!editableProject) return;
 
     const token = localStorage.getItem('token');
-    const updatedProject = {
-      projectName,
-      projectDescription,
-    };
+    const updatedProject = { projectName, projectDescription };
 
     try {
       const response = await fetch(`http://localhost:5000/update_project/${editableProject.id}`, {
@@ -201,9 +186,7 @@ export function HistoryComponent() {
     try {
       const response = await fetch(`http://localhost:5000/delete_project/${projectId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -221,7 +204,6 @@ export function HistoryComponent() {
   return (
     <Container className={styles.container}>
       <Title order={2} className={styles.title}>Project Session Tracker</Title>
-
       <Stack mt="md">
         <TextInput
           placeholder="Enter project name"
@@ -238,10 +220,20 @@ export function HistoryComponent() {
           disabled={isModalOpen} // Disable when modal is open
         />
         <Group className={styles.buttonGroup}>
-          <Button onClick={startSession} disabled={isTimerRunning || isModalOpen} fullWidth color='green'>
+          <Button 
+            onClick={startSession} 
+            disabled={isTimerRunning || isModalOpen || !projectName || !projectDescription} // Disable if either input is empty
+            fullWidth 
+            color='green'
+          >
             Start Session
           </Button>
-          <Button onClick={endSession} disabled={!isTimerRunning || isModalOpen} color="red" fullWidth>
+          <Button 
+            onClick={endSession} 
+            disabled={!isTimerRunning || isModalOpen} 
+            color="red" 
+            fullWidth
+          >
             End Session
           </Button>
         </Group>
@@ -273,48 +265,34 @@ export function HistoryComponent() {
                     </span>
                   </div>
                   <Group>
-                    <Button color="blue" size="xs" onClick={() => handleEditProject(project.id)}>
-                      Edit
-                    </Button>
-                    <Button color="red" size="xs" onClick={() => handleDeleteProject(project.id)}>
-                      Delete
-                    </Button>
+                    <Button onClick={() => handleEditProject(project.id)}>Edit</Button>
+                    <Button color="red" onClick={() => handleDeleteProject(project.id)}>Delete</Button>
                   </Group>
                 </div>
               </Card>
             ))}
           </Stack>
         )}
-
-        {error && <Text className={styles.errorMessage}>{error}</Text>}
       </Stack>
 
       {/* Modal for editing project */}
-      <Modal
-        opened={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Edit Project"
-        centered
-        withCloseButton
-      >
-        <TextInput
+      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Project">
+        <TextInput 
           label="Project Name"
           value={projectName}
           onChange={(event) => setProjectName(event.currentTarget.value)}
-          className={styles.inputField}
         />
-        <TextInput
+        <TextInput 
           label="Project Description"
           value={projectDescription}
           onChange={(event) => setProjectDescription(event.currentTarget.value)}
-          className={styles.inputField}
         />
         <Group align="right" mt="md">
-          <Button onClick={handleSaveChanges} color="green">
-            Save
-          </Button>
+          <Button onClick={handleSaveChanges}>Save Changes</Button>
         </Group>
       </Modal>
+      
+      {error && <Text color="red">{error}</Text>}
     </Container>
   );
 }

@@ -170,6 +170,33 @@ app.get('/user_projects', authenticateToken, (req, res) => {
   });
 });
 
+// Endpoint to update a project
+app.put('/update_project/:id', authenticateToken, (req, res) => {
+  const projectId = req.params.id; // Get project ID from request parameters
+  const userId = req.user.id; // Get user ID from the authenticated token
+  const { projectName, projectDescription } = req.body; // Get project data from the request body
+
+  const query = `
+    UPDATE user_history 
+    SET project_name = ?, project_description = ? 
+    WHERE id = ? AND user_id = ?
+  `;
+
+  connection.query(query, [projectName, projectDescription, projectId, userId], (err, results) => {
+    if (err) {
+      console.error('Error updating project in the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.affectedRows > 0) {
+      res.status(200).json({ message: 'Project updated successfully' });
+    } else {
+      res.status(404).json({ error: 'Project not found or you do not have permission to update this project' });
+    }
+  });
+});
+
+
 // Endpoint to delete a project
 app.delete('/delete_project/:id', authenticateToken, (req, res) => {
   const projectId = req.params.id; // Get project ID from request parameters
