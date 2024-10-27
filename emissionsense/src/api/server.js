@@ -32,6 +32,26 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.post('/check-email', (req, res) => {
+  const { email } = req.body;
+
+  // SQL query to check for existing email
+  const query = 'SELECT * FROM users WHERE email = ?'; // Replace 'users' with your table name
+
+  connection.query(query, [email], (err, results) => {
+    if (err) {
+      console.error('Error checking email:', err);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+
+    if (results.length > 0) {
+      return res.json({ exists: true }); // Email exists
+    } else {
+      return res.json({ exists: false }); // Email does not exist
+    }
+  });
+});
+
 // Endpoint to insert user data into the MySQL database
 app.post('/register', (req, res) => {
   const { name, email, password, organization, device, cpu, gpu, ram, motherboard, psu } = req.body;
@@ -49,28 +69,6 @@ app.post('/register', (req, res) => {
 
     res.status(200).json({ message: 'User registered successfully' });
   });
-});
-
-// Endpoint to fetch device specifications
-app.get('/device-specs', async (req, res) => {
-  try {
-    const cpuInfo = await si.cpu();
-    const ramInfo = await si.mem();
-    const gpuInfo = await si.graphics();
-    const motherboardInfo = await si.baseboard();
-
-    // Format and send the response
-    res.json({
-      cpu: `${cpuInfo.manufacturer} ${cpuInfo.brand}`,
-      gpu: gpuInfo.controllers.length > 0 ? gpuInfo.controllers[0].model : 'No GPU Found',
-      ram: (ramInfo.total / (1024 * 1024 * 1024)).toFixed(2) + ' GB',
-      motherboard: motherboardInfo.model, // Assuming model has the info you need
-      psu: 'PSU info here' // Placeholder for PSU, as this info isn't typically available
-    });
-  } catch (error) {
-    console.error('Error fetching device specifications:', error);
-    res.status(500).json({ error: 'Error fetching device specifications' });
-  }
 });
 
 // Login endpoint
@@ -196,6 +194,29 @@ app.put('/update_project/:id', authenticateToken, (req, res) => {
   });
 });
 
+app.post('/user_Update', authenticateToken, (req, res) => {
+  const { projectName, projectDescription, sessionDuration } = req.body;
+  const userId = req.user.id; // Get the user ID from the authenticated token
+
+  const query = `
+    UPDATE user_history 
+    SET session_duration = ?
+    WHERE user_id = ? AND project_name = ?
+  `;
+
+  connection.query(query, [sessionDuration, userId, projectName], (err, results) => {
+    if (err) {
+      console.error('Error updating session data in the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: 'No matching project found to update' });
+    }
+
+    res.status(200).json({ message: 'Session updated successfully' });
+  });
+});
 
 // Endpoint to delete a project
 app.delete('/delete_project/:id', authenticateToken, (req, res) => {
@@ -216,7 +237,6 @@ app.delete('/delete_project/:id', authenticateToken, (req, res) => {
   });
 });
 
-
 // Example of a protected route
 app.get('/protected', authenticateToken, (req, res) => {
   res.status(200).json({ message: 'This is a protected route', user: req.user });
@@ -224,4 +244,64 @@ app.get('/protected', authenticateToken, (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Endpoint to find a project by name and description
+app.post('/find_project', authenticateToken, (req, res) => {
+  const { projectName, projectDescription } = req.body;
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `
+    SELECT session_duration, id
+    FROM user_history
+    WHERE project_name = ? AND project_description = ? AND user_id = ?
+  `;
+
+  connection.query(query, [projectName, projectDescription, userId], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      // Project found, return session duration and project ID
+      const project = results[0];
+      res.status(200).json({
+        session_duration: project.session_duration,
+        project_id: project.id
+      });
+    } else {
+      // No matching project found
+      res.status(200).json(null);
+    }
+  });
+});
+
+// Endpoints to fetch available CPU and GPU options
+app.get('/cpu-options', (req, res) => {
+  const query = 'SELECT manufacturer, series, model FROM cpus'; // Ensure 'cpus' table exists with these columns
+  
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching CPU options:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    // Return an array of CPU options
+    res.status(200).json({ cpuOptions: results.map(row => `${row.manufacturer} ${row.series} ${row.model}`) });
+  });
+});
+
+app.get('/gpu-options', (req, res) => {
+  const query = 'SELECT manufacturer, series, model FROM gpus'; // Ensure 'gpus' table exists with these columns
+  
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching GPU options:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    // Return an array of GPU options
+    res.status(200).json({ gpuOptions: results.map(row => `${row.manufacturer} ${row.series} ${row.model}`) });
+  });
 });

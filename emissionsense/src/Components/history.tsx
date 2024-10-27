@@ -92,53 +92,147 @@ export function HistoryComponent() {
     }
   };
 
-  const startSession = () => {
+  const startSession = async () => {
     if (isTimerRunning) return;
-    setIsTimerRunning(true);
-    const id = setInterval(() => {
-      setSessionDuration(prev => prev + 1);
-    }, 1000); 
-    setIntervalId(id);
-  };
-
-  const endSession = async () => {
-    if (!isTimerRunning) return; 
-    clearInterval(intervalId!); 
-    setIsTimerRunning(false);
-
+    
     const token = localStorage.getItem('token');
-    const historyData = { projectName, projectDescription, sessionDuration };
-
+    console.log("Starting session with:", projectName, projectDescription);
+ 
     try {
-      const response = await fetch('http://localhost:5000/user_history', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(historyData),
-      });
-
-      if (response.ok) {
-        setProjectName('');
-        setProjectDescription('');
-        setSessionDuration(0);
-        fetchUserProjects(user?.email!); 
-
-        setSessionHistory(prev => [
-          ...prev,
-          { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration },
-        ]);
-      } else {
-        const result = await response.json();
-        setError(result.error || 'Failed to record session.');
-      }
+       // Check for existing project
+       const response = await fetch(`http://localhost:5000/find_project`, {
+          method: 'POST',
+          headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ projectName, projectDescription }),
+       });
+ 
+       if (!response.ok) {
+          throw new Error(`Failed to fetch project: ${response.statusText}`);
+       }
+ 
+       const existingProject = await response.json();
+       console.log("Existing project found:", existingProject);
+ 
+       // Set session duration based on existing project
+       if (existingProject) {
+          setSessionDuration(existingProject.session_duration || 0);
+       } else {
+          setSessionDuration(0);
+       }
+ 
+       // Start the timer
+       setIsTimerRunning(true);
+       const id = setInterval(() => {
+          setSessionDuration((prev) => prev + 1);
+       }, 1000);
+       setIntervalId(id);
     } catch (err) {
-      console.error('Error:', err);
-      setError('An error occurred while recording the session.');
+       console.error('Error in startSession:', err);
+       setError('An error occurred while starting the session.');
     }
-  };
+ };
+ 
 
+ const endSession = async () => {
+  if (!isTimerRunning) return;
+  clearInterval(intervalId!);
+  setIsTimerRunning(false);
+
+  const token = localStorage.getItem('token');
+  const historyData = { projectName, projectDescription, sessionDuration }; // The project being updated
+
+  try {
+    const response = await fetch('http://localhost:5000/find_project', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ projectName, projectDescription }),
+    });
+  
+    if (!response.ok) {
+      throw new Error(`Failed to fetch project: ${response.statusText}`);
+    }
+  
+    const existingProject = await response.json();
+    console.log("Existing project found:", existingProject);
+  
+    // Check if an existing project was found
+    if (existingProject) {
+      try {
+        const response = await fetch('http://localhost:5000/user_Update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(historyData),
+        });
+  
+        if (response.ok) {
+          // Reset fields and refresh project list after update
+          setProjectName('');
+          setProjectDescription('');
+          setSessionDuration(0);
+          fetchUserProjects(user?.email!); // Ensure user is defined before calling
+  
+          setSessionHistory(prev => [
+            ...prev.filter(session => session.projectName !== historyData.projectName),
+            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration },
+          ]);
+        } 
+        else {
+          const result = await response.json();
+          setError(result.error || 'Failed to record session.');
+        }
+      } 
+      catch (err) {
+        console.error('Error:', err);
+        setError('An error occurred while recording the session.');
+      }
+    } 
+    else {
+      try {
+        const response = await fetch('http://localhost:5000/user_history', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(historyData),
+        });
+  
+        if (response.ok) {
+          setProjectName('');
+          setProjectDescription('');
+          setSessionDuration(0);
+          fetchUserProjects(user?.email!); 
+  
+          setSessionHistory(prev => [
+            ...prev,
+            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration },
+          ]);
+        } else {
+          const result = await response.json();
+          setError(result.error || 'Failed to record session.');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setError('An error occurred while recording the session.');
+      }
+    };
+    
+    }
+    catch (err) {
+      console.error('Error in finding project:', err);
+      setError('An error occurred while fetching the project.');
+    }
+  } 
+  
   // Open modal and set the project to edit
   const handleEditProject = (projectId: number) => {
     const projectToEdit = projects.find(project => project.id === projectId);
@@ -248,51 +342,48 @@ export function HistoryComponent() {
 
         <Divider my="md" />
 
-        <Title order={3} className={styles.historyTitle}>Project History:</Title>
+        <Title order={3} className={styles.historyTitle}>Project History</Title>
+        {projects.map((project) => (
+          <Card key={project.id} className={styles.projectCard}>
+            <Text>{project.project_name}</Text>
+            <Text>{project.project_description}</Text>
+            <Text>Session Duration: {formatDuration(project.session_duration)}</Text>
+            <Group align="right">
+              <Button size="xs" onClick={() => handleEditProject(project.id)}>
+                Edit
+              </Button>
+              <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)}>
+                Delete
+              </Button>
+            </Group>
+          </Card>
+        ))}
 
-        {loading ? (
-          <Loader />
-        ) : (
-          <Stack mt="md">
-            {projects.map((project) => (
-              <Card key={project.id} className={styles.projectCard}>
-                <div className={styles.projectHeader}>
-                  <div className={styles.projectInfo}>
-                    <Text fw={500}>{project.project_name}</Text>
-                    <Text size="sm" color="dimmed">{project.project_description}</Text>
-                    <span className={styles.projectDuration}>
-                      Duration: {formatDuration(project.session_duration || 0)}
-                    </span>
-                  </div>
-                  <Group>
-                    <Button onClick={() => handleEditProject(project.id)}>Edit</Button>
-                    <Button color="red" onClick={() => handleDeleteProject(project.id)}>Delete</Button>
-                  </Group>
-                </div>
-              </Card>
-            ))}
+        {/* Edit Project Modal */}
+        <Modal
+          opened={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="Edit Project"
+        >
+          <Stack>
+            <TextInput
+              label="Project Name"
+              placeholder="Enter project name"
+              value={projectName}
+              onChange={(event) => setProjectName(event.currentTarget.value)}
+            />
+            <TextInput
+              label="Project Description"
+              placeholder="Enter project description"
+              value={projectDescription}
+              onChange={(event) => setProjectDescription(event.currentTarget.value)}
+            />
+            <Group align="right">
+              <Button onClick={handleSaveChanges}>Save</Button>
+            </Group>
           </Stack>
-        )}
+        </Modal>
       </Stack>
-
-      {/* Modal for editing project */}
-      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Project">
-        <TextInput 
-          label="Project Name"
-          value={projectName}
-          onChange={(event) => setProjectName(event.currentTarget.value)}
-        />
-        <TextInput 
-          label="Project Description"
-          value={projectDescription}
-          onChange={(event) => setProjectDescription(event.currentTarget.value)}
-        />
-        <Group align="right" mt="md">
-          <Button onClick={handleSaveChanges}>Save Changes</Button>
-        </Group>
-      </Modal>
-      
-      {error && <Text color="red">{error}</Text>}
     </Container>
   );
 }

@@ -1,46 +1,54 @@
-import { useState } from 'react';
-import { Title, Text, TextInput, Button, Container, Group, Anchor, Center, Box, rem } from '@mantine/core';
+import { useState, useEffect } from 'react';
+import { Title, Text, TextInput, Button, Container, Group, Anchor, Center, Box, rem, Select } from '@mantine/core';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import classes from './Proceed.module.css'; // Assuming this is where your styles reside
+import classes from './Proceed.module.css';
 
 const DeviceForm: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // To receive the data passed from Register.tsx
-
-  // States to store the computer component details
+  const location = useLocation();
+  
   const [device, setDevice] = useState<string | null>(null);
   const [cpu, setCpu] = useState('');
   const [gpu, setGpu] = useState('');
   const [ram, setRam] = useState('');
   const [motherboard, setMotherboard] = useState('');
   const [psu, setPsu] = useState('');
-
-  // Extracting user details passed from Register.tsx
+  
+  const [cpuOptions, setCpuOptions] = useState<string[]>([]);
+  const [gpuOptions, setGpuOptions] = useState<string[]>([]);
+  
   const { name, email, password, organization } = location.state || {};
-
-  // Function to fetch device specifications
-  const fetchDeviceSpecifications = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/device-specs'); // Make sure this endpoint exists
-      const { cpu, gpu, ram, motherboard, psu } = response.data;
-
-      // Update states with fetched data
-      setCpu(cpu);
-      setGpu(gpu);
-      setRam(ram);
-      setMotherboard(motherboard);
-      setPsu(psu);
-    } catch (error) {
-      console.error('Error fetching device specifications:', error);
-    }
-  };
+  
+  // Fetch CPU and GPU options on component mount
+  useEffect(() => {
+    const fetchCpuOptions = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/cpu-options');
+        setCpuOptions(response.data.cpuOptions);
+      } catch (error) {
+        console.error('Error fetching CPU options:', error);
+      }
+    };
+    
+    const fetchGpuOptions = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/gpu-options');
+        setGpuOptions(response.data.gpuOptions);
+      } catch (error) {
+        console.error('Error fetching GPU options:', error);
+      }
+    };
+    
+    fetchCpuOptions();
+    fetchGpuOptions();
+  }, []);
+  
   const handleLogin = () => {
-    navigate('/register'); // Change this to your actual login route
+    navigate('/register');
   };
 
-  // Function to handle form submission to save data to the database
   const handleSubmit = async () => {
     try {
       const response = await axios.post('http://localhost:5000/register', {
@@ -56,7 +64,6 @@ const DeviceForm: React.FC = () => {
         psu
       });
       if (response.status === 200) {
-        // Navigate to the main content after successful registration
         navigate('/main');
       } else {
         console.error('Error saving user data');
@@ -69,70 +76,49 @@ const DeviceForm: React.FC = () => {
   return (
     <div className={classes.container}>
       <Container size={480} my={30}>
-        <Title ta="center" className={classes.heading} style={{ backround: 'transparent' }}>
+        <Title ta="center" className={classes.heading} style={{ background: 'transparent' }}>
           {device ? `Device: ${device}` : 'Select your Device'}
         </Title>
-        <Text c="dimmed" fz="sm" ta="center" style={{color: 'white'}}>
+        <Text c="dimmed" fz="sm" ta="center" style={{ color: 'white' }}>
           {device ? 'Enter your information below' : 'Choose a device type to continue'}
         </Text>
 
         <div className={classes.formContainer}>
           {!device ? (
             <Group ta="center" mt="md">
-
-              <Button
-                fullWidth
-                size="md"
-                onClick={() => setDevice('Personal Computer')}
-                className={classes.button}
-                color="green"
-              >
+              <Button fullWidth size="md" onClick={() => setDevice('Personal Computer')} className={classes.button} color="green">
                 Personal Computer
               </Button>
-              <Button
-                fullWidth
-                size="md"
-                onClick={() => setDevice('Laptop')}
-                className={classes.button}
-                color="green"
-              >
+              <Button fullWidth size="md" onClick={() => setDevice('Laptop')} className={classes.button} color="green">
                 Laptop
               </Button>
               <Anchor c="dimmed" size="sm" className={classes.control}>
-              <Center inline>
-                <IconArrowLeft style={{ width: rem(12), color: 'white', height: rem(12) }} stroke={1.5} />
-                <Box onClick={handleLogin} ml={5} style={{ color: 'white' }}>
-                  Go Back
-                </Box>
-              </Center>
-            </Anchor>
+                <Center inline>
+                  <IconArrowLeft style={{ width: rem(12), color: 'white', height: rem(12) }} stroke={1.5} />
+                  <Box onClick={handleLogin} ml={5} style={{ color: 'white' }}>
+                    Go Back
+                  </Box>
+                </Center>
+              </Anchor>
             </Group>
           ) : (
             <>
-              <Button
-                fullWidth
-                size="md"
-                onClick={fetchDeviceSpecifications}
-                className={classes.button}
-                mb="sm"
-                color="green"
-              >
-                Auto-Fetch Device Specs
-              </Button>
-              <TextInput
+              <Select
                 label="CPU"
-                placeholder="Enter your CPU"
+                placeholder="Select your CPU"
                 value={cpu}
-                onChange={(e) => setCpu(e.currentTarget.value)}
+                onChange={(value) => setCpu(value || '')}
+                data={cpuOptions.map((option) => ({ value: option, label: option }))} // Correctly formatted options
                 required
                 mb="sm"
                 className={classes.inputField}
               />
-              <TextInput
+              <Select
                 label="GPU"
-                placeholder="Enter your GPU"
+                placeholder="Select your GPU"
                 value={gpu}
-                onChange={(e) => setGpu(e.currentTarget.value)}
+                onChange={(value) => setGpu(value || '')}
+                data={gpuOptions.map((option) => ({ value: option, label: option }))} // Correctly formatted options
                 required
                 mb="sm"
                 className={classes.inputField}
@@ -161,26 +147,12 @@ const DeviceForm: React.FC = () => {
                 value={psu}
                 onChange={(e) => setPsu(e.currentTarget.value)}
                 required
-                mb="md"
+                mb="sm"
                 className={classes.inputField}
               />
-              <Group justify="space-between" mt="lg">
-                <Anchor size="sm" c="dimmed">
-                  <Center inline>
-                    <IconArrowLeft style={{ width: rem(12), height: rem(12) }} color='white' stroke={1.5} />
-                    <Box onClick={() => setDevice(null)} ml={5} style={{ color: 'white' }}>
-                      Back to device selection
-                    </Box>
-                  </Center>
-                </Anchor>
-                <Button
-                  onClick={handleSubmit}
-                  className={classes.button}
-                  color="green"
-                >
-                  Submit
-                </Button>
-              </Group>
+              <Button fullWidth mt="sm" onClick={handleSubmit} className={classes.button} color="green">
+                Submit
+              </Button>
             </>
           )}
         </div>

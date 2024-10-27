@@ -14,7 +14,7 @@ import {
   Avatar,
   Tooltip,
 } from '@mantine/core';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classes from './Register.module.css';
 import { IconArrowLeft } from '@tabler/icons-react';
@@ -23,6 +23,7 @@ import { GoogleButton } from './GoogleButton';
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailExists, setEmailExists] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [organization, setOrganization] = useState('');
@@ -33,6 +34,30 @@ const RegisterPage: React.FC = () => {
   const handleLogin = () => {
     navigate('/');
   };
+
+  const checkEmailExists = async (email: string) => {
+    try {
+      const response = await fetch('/check-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      setEmailExists(data.exists);
+    } catch (error) {
+      console.error('Error checking email:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (email) {
+      checkEmailExists(email);
+    } else {
+      setEmailExists(false); // Reset if the email input is empty
+    }
+  }, [email]);
 
   const compressImage = (file: File, quality: number): Promise<File> => {
     return new Promise((resolve) => {
@@ -45,9 +70,8 @@ const RegisterPage: React.FC = () => {
           const ctx = canvas.getContext('2d');
 
           if (ctx) {
-            // Resize the canvas to the dimensions of the image
-            const maxWidth = 800; // Set maximum width
-            const maxHeight = 800; // Set maximum height
+            const maxWidth = 800; 
+            const maxHeight = 800; 
             let width = img.width;
             let height = img.height;
 
@@ -67,12 +91,11 @@ const RegisterPage: React.FC = () => {
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
 
-            // Compress the image to a Blob
             canvas.toBlob((blob) => {
               if (blob) {
                 resolve(new File([blob], file.name, { type: file.type }));
               } else {
-                resolve(file); // Fallback in case blob generation fails
+                resolve(file);
               }
             }, file.type, quality);
           }
@@ -84,7 +107,7 @@ const RegisterPage: React.FC = () => {
 
   const handleProfilePictureChange = async (file: File | null) => {
     if (file) {
-      const compressedFile = await compressImage(file, 0.8); // Compress to 80% quality
+      const compressedFile = await compressImage(file, 0.8);
       setProfilePicture(compressedFile);
       const reader = new FileReader();
       reader.onload = () => {
@@ -99,6 +122,10 @@ const RegisterPage: React.FC = () => {
   const handleProceed = () => {
     if (!name || !email || !password || !organization || password !== confirmPassword) {
       alert('Please fill all fields and ensure the passwords match.');
+      return;
+    }
+    if (emailExists) {
+      alert('This email is already in use. Please choose a different email.');
       return;
     }
 
@@ -138,13 +165,13 @@ const RegisterPage: React.FC = () => {
                   style={{ border: '2px solid white' }}
                 />
                 <FileInput
-                  id="file-input" // Give the input an ID
+                  id="file-input"
                   label="Profile Picture"
                   placeholder="Upload your profile picture"
                   onChange={handleProfilePictureChange}
                   accept="image/*"
                   className={classes.text}
-                  style={{ display: 'none' }} // Hide the actual input
+                  style={{ display: 'none' }}
                 />
               </div>
             </Tooltip>
@@ -167,6 +194,7 @@ const RegisterPage: React.FC = () => {
             onChange={(e) => setEmail(e.currentTarget.value)}
             required
             style={{ color: 'white' }}
+            error={emailExists ? 'This email is already in use.' : undefined} // Show error if email exists
           />
           <PasswordInput
             label="Password"
