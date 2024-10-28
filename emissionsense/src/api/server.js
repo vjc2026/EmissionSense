@@ -194,6 +194,82 @@ app.put('/update_project/:id', authenticateToken, (req, res) => {
   });
 });
 
+app.get('/cpu_usage', async (req, res) => {
+  const { model } = req.query;
+  connection.query('SELECT avg_watt_usage FROM cpus WHERE model = ?', [model], (err, results) => {
+    if (err) {
+      console.error('Error fetching CPU usage:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results[0]); // Return the first result
+  });
+});
+
+// Example of fetching average watt usage for GPU
+app.get('/gpu_usage', async (req, res) => {
+  const { model } = req.query;
+  connection.query('SELECT avg_watt_usage FROM gpus WHERE model = ?', [model], (err, results) => {
+    if (err) {
+      console.error('Error fetching GPU usage:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results[0]); // Return the first result
+  });
+});
+
+// Endpoint to calculate carbon emissions
+app.post('/calculate_emissions', authenticateToken, async (req, res) => {
+  const { sessionDuration } = req.body; // Get session duration from the request body
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  try {
+      // Fetch user's CPU and GPU details
+      const userQuery = `SELECT cpu, gpu FROM users WHERE id = ?`;
+      connection.query(userQuery, [userId], async (err, userResults) => {
+          if (err) {
+              console.error('Error fetching user details:', err);
+              return res.status(500).json({ error: 'Database error' });
+          }
+
+          if (userResults.length === 0) {
+              return res.status(404).json({ error: 'User not found' });
+          }
+
+          const { cpu, gpu } = userResults[0];
+
+          // Fetch CPU and GPU wattage
+          const cpuResponse = await fetch(`http://localhost:5000/cpu_usage?model=${cpu}`);
+          const gpuResponse = await fetch(`http://localhost:5000/gpu_usage?model=${gpu}`);
+
+          if (cpuResponse.ok && gpuResponse.ok) {
+              const cpuData = await cpuResponse.json();
+              const gpuData = await gpuResponse.json();
+
+              const cpuWattUsage = cpuData.avg_watt_usage;
+              const gpuWattUsage = gpuData.avg_watt_usage;
+
+              // Calculate total power consumption (in kWh)
+              const totalWattUsage = cpuWattUsage + gpuWattUsage;
+              const totalEnergyUsed = (totalWattUsage * sessionDuration) / 3600; // kWh
+
+              // Define carbon intensity (kg CO2/kWh)
+              const CARBON_INTENSITY = 0.475; // Example value, adjust based on your region
+
+              // Calculate carbon emissions
+              const carbonEmissions = totalEnergyUsed * CARBON_INTENSITY; // in kg CO2e
+
+              res.status(200).json({ carbonEmissions });
+          } else {
+              return res.status(500).json({ error: 'Error fetching wattage data' });
+          }
+      });
+  } catch (error) {
+      console.error('Error calculating carbon emissions:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
 app.post('/user_Update', authenticateToken, (req, res) => {
   const { projectName, projectDescription, sessionDuration } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
