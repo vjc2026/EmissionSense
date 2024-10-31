@@ -16,38 +16,36 @@ const DeviceForm: React.FC = () => {
   const [motherboard, setMotherboard] = useState('');
   const [psu, setPsu] = useState('');
   
-  const [cpuOptions, setCpuOptions] = useState<string[]>([]);
-  const [gpuOptions, setGpuOptions] = useState<string[]>([]);
+  const [cpuOptions, setCpuOptions] = useState<{ label: string; value: string }[]>([]);
+  const [gpuOptions, setGpuOptions] = useState<{ label: string; value: string }[]>([]);
   
   const { name, email, password, organization } = location.state || {};
-  
-  // Fetch CPU and GPU options on component mount
+
   useEffect(() => {
-    const fetchCpuOptions = async () => {
+    const fetchOptions = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/cpu-options');
-        setCpuOptions(response.data.cpuOptions);
+        const cpuResponse = await axios.get('http://localhost:5000/cpu-options');
+        setCpuOptions(
+          cpuResponse.data.cpuOptions.map((cpu: { label: string; value: string }) => ({
+            label: cpu.label, // Display full option as label
+            value: cpu.value  // Use model as the unique value
+          }))
+        );
+
+        const gpuResponse = await axios.get('http://localhost:5000/gpu-options');
+        setGpuOptions(
+          gpuResponse.data.gpuOptions.map((gpu: { label: string; value: string }) => ({
+            label: gpu.label, // Display full option as label
+            value: gpu.value  // Use model as the unique value
+          }))
+        );
       } catch (error) {
-        console.error('Error fetching CPU options:', error);
+        console.error('Error fetching options:', error);
       }
     };
     
-    const fetchGpuOptions = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/gpu-options');
-        setGpuOptions(response.data.gpuOptions);
-      } catch (error) {
-        console.error('Error fetching GPU options:', error);
-      }
-    };
-    
-    fetchCpuOptions();
-    fetchGpuOptions();
+    fetchOptions();
   }, []);
-  
-  const handleLogin = () => {
-    navigate('/register');
-  };
 
   const handleSubmit = async () => {
     try {
@@ -95,7 +93,7 @@ const DeviceForm: React.FC = () => {
               <Anchor c="dimmed" size="sm" className={classes.control}>
                 <Center inline>
                   <IconArrowLeft style={{ width: rem(12), color: 'white', height: rem(12) }} stroke={1.5} />
-                  <Box onClick={handleLogin} ml={5} style={{ color: 'white' }}>
+                  <Box onClick={() => navigate('/register')} ml={5} style={{ color: 'white' }}>
                     Go Back
                   </Box>
                 </Center>
@@ -108,7 +106,7 @@ const DeviceForm: React.FC = () => {
                 placeholder="Select your CPU"
                 value={cpu}
                 onChange={(value) => setCpu(value || '')}
-                data={cpuOptions.map((option) => ({ value: option, label: option }))} // Correctly formatted options
+                data={cpuOptions} // Display optionString, save model
                 required
                 mb="sm"
                 className={classes.inputField}
@@ -118,7 +116,7 @@ const DeviceForm: React.FC = () => {
                 placeholder="Select your GPU"
                 value={gpu}
                 onChange={(value) => setGpu(value || '')}
-                data={gpuOptions.map((option) => ({ value: option, label: option }))} // Correctly formatted options
+                data={gpuOptions} // Display optionString, save model
                 required
                 mb="sm"
                 className={classes.inputField}

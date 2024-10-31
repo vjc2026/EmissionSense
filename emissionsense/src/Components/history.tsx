@@ -29,18 +29,11 @@ export function HistoryComponent() {
   // Modal-related state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editableProject, setEditableProject] = useState<any | null>(null);
-  
-  // Carbon intensity (you can adjust this value as needed)
-  const CARBON_INTENSITY = 0.0005; // Example value in kg CO2 per second
 
   const formatDuration = (duration: number) => {
     const minutes = Math.floor(duration / 60);
     const seconds = duration % 60;
     return `${minutes}m ${seconds}s`;
-  };
-
-  const calculateCarbonEmissions = (duration: number) => {
-    return duration * CARBON_INTENSITY; // Calculate emissions based on duration
   };
 
   useEffect(() => {
@@ -106,7 +99,6 @@ export function HistoryComponent() {
     console.log("Starting session with:", projectName, projectDescription);
  
     try {
-       // Check for existing project
        const response = await fetch(`http://localhost:5000/find_project`, {
           method: 'POST',
           headers: {
@@ -123,14 +115,12 @@ export function HistoryComponent() {
        const existingProject = await response.json();
        console.log("Existing project found:", existingProject);
  
-       // Set session duration based on existing project
        if (existingProject) {
           setSessionDuration(existingProject.session_duration || 0);
        } else {
           setSessionDuration(0);
        }
  
-       // Start the timer
        setIsTimerRunning(true);
        const id = setInterval(() => {
           setSessionDuration((prev) => prev + 1);
@@ -146,16 +136,30 @@ export function HistoryComponent() {
     if (!isTimerRunning) return;
     clearInterval(intervalId!);
     setIsTimerRunning(false);
-
+  
     const token = localStorage.getItem('token');
     const historyData = { projectName, projectDescription, sessionDuration }; // The project being updated
-
-    // Calculate carbon emissions
-    const carbonEmissions = calculateCarbonEmissions(sessionDuration);
-    console.log(`Calculated Carbon Emissions: ${carbonEmissions} kg CO2`);
-
+  
     try {
-      const response = await fetch('http://localhost:5000/find_project', {
+      // First, fetch carbon emissions
+      const emissionsResponse = await fetch('http://localhost:5000/calculate_emissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ sessionDuration }), 
+      });
+  
+      if (!emissionsResponse.ok) {
+        throw new Error(`Failed to calculate emissions: ${emissionsResponse.statusText}`);
+      }
+  
+      const { carbonEmissions } = await emissionsResponse.json();
+      console.log(`Calculated Carbon Emissions: ${carbonEmissions} kg CO2`);
+  
+      // Next, find the existing project
+      const projectResponse = await fetch('http://localhost:5000/find_project', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,96 +168,71 @@ export function HistoryComponent() {
         body: JSON.stringify({ projectName, projectDescription }),
       });
   
-      if (!response.ok) {
-        throw new Error(`Failed to fetch project: ${response.statusText}`);
+      if (!projectResponse.ok) {
+        throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
       }
   
-      const existingProject = await response.json();
+      const existingProject = await projectResponse.json();
       console.log("Existing project found:", existingProject);
   
-      // Check if an existing project was found
+      // If the project exists, update it
       if (existingProject) {
-        try {
-          const response = await fetch('http://localhost:5000/user_Update', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ ...historyData, carbonEmissions }), // Include carbon emissions in the payload
-          });
+        const updateResponse = await fetch('http://localhost:5000/user_Update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ...historyData, carbonEmissions }),
+        });
   
-          if (response.ok) {
-            // Reset fields and refresh project list after update
-            setProjectName('');
-            setProjectDescription('');
-            setSessionDuration(0);
-            fetchUserProjects(user?.email!); // Ensure user is defined before calling
+        if (updateResponse.ok) {
+          // Reset fields and refresh project list after update
+          setProjectName('');
+          setProjectDescription('');
+          setSessionDuration(0);
+          fetchUserProjects(user?.email!); // Ensure user is defined before calling
   
-            setSessionHistory(prev => [
-              ...prev.filter(session => session.projectName !== historyData.projectName),
-              { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions },
-            ]);
-          } 
-          else {
-            const result = await response.json();
-            setError(result.error || 'Failed to record session.');
-          }
-        } 
-        catch (err) {
-          console.error('Error:', err);
-          setError('An error occurred while recording the session.');
+          setSessionHistory(prev => [
+            ...prev.filter(session => session.projectName !== historyData.projectName),
+            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions },
+          ]);
+        } else {
+          const result = await updateResponse.json();
+          setError(result.error || 'Failed to record session.');
         }
-      } 
-      else {
-        try {
-          const response = await fetch('http://localhost:5000/user_history', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ ...historyData, carbonEmissions }), // Include carbon emissions in the payload
-          });
+      } else {
+        // If no existing project, create a new history entry
+        const historyResponse = await fetch('http://localhost:5000/user_history', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ...historyData, carbonEmissions }),
+        });
   
-          if (response.ok) {
-            setProjectName('');
-            setProjectDescription('');
-            setSessionDuration(0);
-            fetchUserProjects(user?.email!); 
+        if (historyResponse.ok) {
+          setProjectName('');
+          setProjectDescription('');
+          setSessionDuration(0);
+          fetchUserProjects(user?.email!); 
   
-            setSessionHistory(prev => [
-              ...prev,
-              { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions },
-            ]);
-          } else {
-            const result = await response.json();
-            setError(result.error || 'Failed to record session.');
-          }
-        } catch (err) {
-          console.error('Error:', err);
-          setError('An error occurred while recording the session.');
+          setSessionHistory(prev => [
+            ...prev,
+            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions },
+          ]);
+        } else {
+          const result = await historyResponse.json();
+          setError(result.error || 'Failed to record session.');
         }
-      };
-      
-    }
-    catch (err) {
-      console.error('Error in finding project:', err);
-      setError('An error occurred while fetching the project.');
+      }
+    } catch (err) {
+      console.error('Error in endSession:', err);
+      setError('An error occurred while recording the session.');
     }
   };
-
-  // Open modal and set the project to edit
-  const handleEditProject = (projectId: number) => {
-    const projectToEdit = projects.find(project => project.id === projectId);
-    if (projectToEdit) {
-      setEditableProject(projectToEdit);
-      setProjectName(projectToEdit.project_name);
-      setProjectDescription(projectToEdit.project_description);
-      setIsModalOpen(true); // Open the modal
-    }
-  };
-
+  
   // Save changes from modal
   const handleSaveChanges = async () => {
     if (!editableProject) return;
@@ -272,81 +251,122 @@ export function HistoryComponent() {
       });
 
       if (response.ok) {
-        setProjects(prevProjects => 
-          prevProjects.map(project => 
-            project.id === editableProject.id ? { ...project, ...updatedProject } : project
-          )
-        );
-        setIsModalOpen(false); // Close modal after saving changes
-        setEditableProject(null);
+        fetchUserProjects(user?.email!); 
+        setIsModalOpen(false); // Close the modal
+        setEditableProject(null); // Reset editable project
       } else {
         const result = await response.json();
         setError(result.error || 'Failed to update project.');
       }
     } catch (err) {
-      console.error('Error while saving changes:', err);
-      setError('An error occurred while saving changes.');
+      console.error('Error:', err);
+      setError('An error occurred while updating the project.');
+    }
+  };
+
+  const handleDeleteProject = async (projectId: number) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/delete_project/${projectId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        fetchUserProjects(user?.email!); 
+      } else {
+        const result = await response.json();
+        setError(result.error || 'Failed to delete project.');
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError('An error occurred while deleting the project.');
+    }
+  };
+
+  const handleEditProject = (projectId: number) => {
+    const projectToEdit = projects.find(p => p.id === projectId);
+    if (projectToEdit) {
+      setProjectName(projectToEdit.project_name);
+      setProjectDescription(projectToEdit.project_description);
+      setEditableProject(projectToEdit);
+      setIsModalOpen(true);
     }
   };
 
   return (
-    <Container className={styles.container}>
-      <Title order={2}>Session History</Title>
-      {loading && <Loader />}
+    <Container>
+      <Title order={1}>Session Tracker</Title>
       {error && <Text color="red">{error}</Text>}
-      
-      <Divider my="sm" />
-      
-      <Stack>
-        {sessionHistory.map((session, index) => (
-          <Card key={index} shadow="sm" padding="lg">
-            <Text fw={500}>Project Name: {session.projectName}</Text>
-            <Text>Description: {session.projectDescription}</Text>
-            <Text>Duration: {formatDuration(session.sessionDuration)}</Text>
-            <Text>Carbon Emissions: {session.carbonEmissions.toFixed(4)} kg CO2</Text>
-          </Card>
-        ))}
-      </Stack>
+      {loading ? (
+        <Loader />
+      ) : (
+        <Stack align="lg">
+          <TextInput 
+            placeholder="Project Name" 
+            value={projectName} 
+            onChange={(e) => setProjectName(e.target.value)} 
+          />
+          <TextInput 
+            placeholder="Project Description" 
+            value={projectDescription} 
+            onChange={(e) => setProjectDescription(e.target.value)} 
+          />
+          <Group>
+            <Button onClick={startSession} disabled={isTimerRunning}>
+              Start Session
+            </Button>
+            <Button onClick={endSession} disabled={!isTimerRunning}>
+              End Session
+            </Button>
+          </Group>
+          <Divider />
+          <Title order={3} className={styles.historyTitle}>Project History</Title>
+          {projects.map((project) => {
+            // Calculate total carbon emissions for the current project
+            const totalCarbonEmissions = sessionHistory
+              .filter(session => session.projectName === project.project_name)
+              .reduce((acc, session) => acc + session.carbonEmissions, 0);
 
-      <Divider my="sm" />
-      
-      <TextInput
-        label="Project Name"
-        value={projectName}
-        onChange={(e) => setProjectName(e.currentTarget.value)}
-        required
-      />
-      <TextInput
-        label="Project Description"
-        value={projectDescription}
-        onChange={(e) => setProjectDescription(e.currentTarget.value)}
-        required
-      />
+            return (
+              <Card key={project.id} className={styles.projectCard}>
+                <Text>{project.project_name}</Text>
+                <Text>{project.project_description}</Text>
+                <Text>Session Duration: {formatDuration(project.session_duration)}</Text>
+                <Text>Carbon Emissions: {totalCarbonEmissions.toFixed(4)} kg CO2</Text>
 
-      <Group align="apart" mt="md">
-        <Button onClick={startSession} disabled={isTimerRunning}>Start Session</Button>
-        <Button onClick={endSession} disabled={!isTimerRunning}>End Session</Button>
-      </Group>
+                <Group align="right">
+                  <Button size="xs" onClick={() => handleEditProject(project.id)}>
+                    Edit
+                  </Button>
+                  <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)}>
+                    Delete
+                  </Button>
+                </Group>
+              </Card>
+            );
+          })}
+        </Stack>
+      )}
 
-      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <Title order={4}>Edit Project</Title>
-        <TextInput
-          label="Project Name"
-          value={projectName}
-          onChange={(e) => setProjectName(e.currentTarget.value)}
-          required
+      {/* Modal for editing project */}
+      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Project">
+        <TextInput 
+          placeholder="Project Name" 
+          value={projectName} 
+          onChange={(e) => setProjectName(e.target.value)} 
         />
-        <TextInput
-          label="Project Description"
-          value={projectDescription}
-          onChange={(e) => setProjectDescription(e.currentTarget.value)}
-          required
+        <TextInput 
+          placeholder="Project Description" 
+          value={projectDescription} 
+          onChange={(e) => setProjectDescription(e.target.value)} 
         />
-        <Button onClick={handleSaveChanges}>Save Changes</Button>
+        <Group align="right" mt="md">
+          <Button onClick={handleSaveChanges}>Save Changes</Button>
+        </Group>
       </Modal>
     </Container>
   );
 }
-
 
 export default HistoryComponent;

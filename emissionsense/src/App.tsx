@@ -8,6 +8,7 @@ import Register from './LoginAndRegister/Register';
 import Proceed from './LoginAndRegister/Proceed';
 import History from './Components/history';
 import TEST from './Components/TEST';
+import UserSpecs from './Components/UserSpecs';
 import classes from './Components/TEST.module.css'
 import { IconBoxPadding, IconCaretDownFilled  } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
@@ -83,6 +84,7 @@ const App: React.FC = () => {
       <Route path="/main" element={<ProtectedRoute element={<MainContent />} />} />
       <Route path="/proceed" element={<Proceed />} />
       <Route path="/test" element={<TEST />} />
+      <Route path="/test1" element={<UserSpecs />} />
     </Routes>
   );
 };
