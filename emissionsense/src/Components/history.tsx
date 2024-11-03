@@ -295,60 +295,80 @@ export function HistoryComponent() {
   };
 
   return (
-    <Container>
-      <Title order={1}>Session Tracker</Title>
-      {error && <Text color="red">{error}</Text>}
+    <Container className={styles.container}>
+      <Title order={1} className={styles.title}>
+        Session Tracker
+      </Title>
+  
+      {error && (
+        <Text className={styles.errorText}>
+          {error}
+        </Text>
+      )}
+  
       {loading ? (
-        <Loader />
+        <Loader size="lg" style={{ display: 'block', margin: '0 auto' }} />
       ) : (
-        <Stack align="lg">
-          <TextInput 
-            placeholder="Project Name" 
-            value={projectName} 
-            onChange={(e) => setProjectName(e.target.value)} 
+        <Stack mt="md">
+          <TextInput
+            placeholder="Project Name"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            style={{ width: '100%' }}
           />
-          <TextInput 
-            placeholder="Project Description" 
-            value={projectDescription} 
-            onChange={(e) => setProjectDescription(e.target.value)} 
+          
+          <TextInput
+            placeholder="Project Description"
+            value={projectDescription}
+            onChange={(e) => setProjectDescription(e.target.value)}
+            style={{ width: '100%' }}
           />
-          <Group>
+
+          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
+            Current Duration: {formatDuration(sessionDuration)}
+          </Text>
+          
+          <Group mt="md" align="center" style={{ marginTop: 15 }}>
             <Button onClick={startSession} disabled={isTimerRunning}>
               Start Session
             </Button>
-            <Button onClick={endSession} disabled={!isTimerRunning}>
+            <Button onClick={endSession} disabled={!isTimerRunning} color="red">
               End Session
             </Button>
-          </Group>
-          <Divider />
-          <Title order={3} className={styles.historyTitle}>Project History</Title>
+          </Group>    
+          
+          <Divider style={{ width: '100%', margin: '20px 0' }} />
+          
+          <Title order={3} className={styles.historyTitle}>
+            Project History
+          </Title>
+          
           {projects.map((project) => {
-            // Calculate total carbon emissions for the current project
             const totalCarbonEmissions = sessionHistory
               .filter(session => session.projectName === project.project_name)
               .reduce((acc, session) => acc + session.carbonEmissions, 0);
-
+  
             return (
-              <Card key={project.id} className={styles.projectCard}>
-                <Text>{project.project_name}</Text>
-                <Text>{project.project_description}</Text>
-                <Text>Session Duration: {formatDuration(project.session_duration)}</Text>
-                <Text>Carbon Emissions: {totalCarbonEmissions.toFixed(4)} kg CO2</Text>
+            <Card key={project.id} className={styles.projectCard}>
+              <Text className={styles.projectName}>Project Name: {project.project_name}</Text>
+              <Text className={styles.projectDescription}>Description: {project.project_description}</Text>
+              <Text className={styles.historyDetails}>Session Duration: {formatDuration(project.session_duration)}</Text>
+              <Text className={styles.historyDetails}>Carbon Emissions: {totalCarbonEmissions.toFixed(4)} kg CO2</Text>
 
-                <Group align="right">
-                  <Button size="xs" onClick={() => handleEditProject(project.id)}>
-                    Edit
-                  </Button>
-                  <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)}>
-                    Delete
-                  </Button>
-                </Group>
-              </Card>
+              <Group className={styles.buttonGroup}>
+                <Button size="xs" onClick={() => handleEditProject(project.id)}>
+                  Edit
+                </Button>
+                <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)}>
+                  Delete
+                </Button>
+              </Group>
+            </Card>
             );
           })}
         </Stack>
       )}
-
+  
       {/* Modal for editing project */}
       <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Project">
         <TextInput 
