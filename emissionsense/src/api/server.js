@@ -3,7 +3,6 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2');
-const si = require('systeminformation'); // Import systeminformation package
 require('dotenv').config();
 
 const app = express();
