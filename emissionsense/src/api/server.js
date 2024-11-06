@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
 const mysql = require('mysql2');
 require('dotenv').config();
 
@@ -53,14 +54,14 @@ app.post('/check-email', (req, res) => {
 
 // Endpoint to insert user data into the MySQL database
 app.post('/register', (req, res) => {
-  const { name, email, password, organization, device, cpu, gpu, ram, motherboard, psu } = req.body;
+  const { name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu } = req.body;
 
   const query = `
-    INSERT INTO users (name, email, password, organization, device, cpu, gpu, ram, motherboard, psu)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, motherboard, psu], (err, results) => {
+  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu], (err, results) => {
     if (err) {
       console.error('Error inserting data into the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -113,7 +114,7 @@ app.get('/user', authenticateToken, (req, res) => {
   const { email } = req.user;
 
   const userQuery = `
-    SELECT name, cpu, gpu, email FROM users WHERE email = ?
+    SELECT name, organization, cpu, gpu, email FROM users WHERE email = ?
   `;
 
   connection.query(userQuery, [email], (err, userResults) => {
@@ -155,17 +156,26 @@ app.get('/user', authenticateToken, (req, res) => {
   });
 });
 
-
 app.post('/user_history', authenticateToken, (req, res) => {
-  const { projectName, projectDescription, sessionDuration } = req.body;
+  const { organization, projectName, projectDescription, sessionDuration, carbonEmit } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
 
+  // Log the data being inserted
+  console.log('Inserting session data:', {
+    userId,
+    organization,
+    projectName,
+    projectDescription,
+    sessionDuration,
+    carbonEmit
+  });
+
   const query = `
-    INSERT INTO user_history (user_id, project_name, project_description, session_duration)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit)
+    VALUES (?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [userId, projectName, projectDescription, sessionDuration], (err, results) => {
+  connection.query(query, [userId, organization, projectName, projectDescription, sessionDuration, carbonEmit], (err, results) => {
     if (err) {
       console.error('Error inserting session data into the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -175,12 +185,13 @@ app.post('/user_history', authenticateToken, (req, res) => {
   });
 });
 
+
 // Endpoint to fetch user's projects
 app.get('/user_projects', authenticateToken, (req, res) => {
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
-    SELECT id, project_name, project_description, session_duration FROM user_history WHERE user_id = ?
+    SELECT id, organization, project_name, project_description, session_duration, carbon_emit FROM user_history WHERE user_id = ?
   `;
 
   connection.query(query, [userId], (err, results) => {
@@ -220,16 +231,16 @@ app.put('/update_project/:id', authenticateToken, (req, res) => {
 });
 
 app.post('/user_Update', authenticateToken, (req, res) => {
-  const { projectName, projectDescription, sessionDuration } = req.body;
+  const { projectName, projectDescription, sessionDuration, carbonEmissions } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
     UPDATE user_history 
-    SET session_duration = ?
+    SET session_duration = ?, carbon_emit = ?
     WHERE user_id = ? AND project_name = ?
   `;
 
-  connection.query(query, [sessionDuration, userId, projectName], (err, results) => {
+  connection.query(query, [sessionDuration, carbonEmissions, userId, projectName], (err, results) => {
     if (err) {
       console.error('Error updating session data in the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -309,7 +320,7 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
 
   try {
       // Fetch user's CPU and GPU details
-      const userQuery = `SELECT cpu, gpu FROM users WHERE id = ?`;
+      const userQuery = `SELECT cpu, gpu, ram FROM users WHERE id = ?`;
       connection.query(userQuery, [userId], async (err, userResults) => {
           if (err) {
               console.error('Error fetching user details:', err);
@@ -320,21 +331,24 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
               return res.status(404).json({ error: 'User not found' });
           }
 
-          const { cpu, gpu } = userResults[0];
+          const { cpu, gpu, ram} = userResults[0];
 
           // Fetch CPU and GPU wattage
           const cpuResponse = await fetch(`http://localhost:5000/cpu_usage?model=${cpu}`);
           const gpuResponse = await fetch(`http://localhost:5000/gpu_usage?model=${gpu}`);
+          const ramResponse = await fetch(`http://localhost:5000/ram_usage?model=${ram}`);
 
           if (cpuResponse.ok && gpuResponse.ok) {
               const cpuData = await cpuResponse.json();
               const gpuData = await gpuResponse.json();
+              const ramData = await ramResponse.json();
 
               const cpuWattUsage = cpuData.avg_watt_usage;
               const gpuWattUsage = gpuData.avg_watt_usage;
+              const ramWattUsage = ramData.avg_watt_usage;
 
               // Calculate total power consumption (in kWh)
-              const totalWattUsage = cpuWattUsage + gpuWattUsage;
+              const totalWattUsage = cpuWattUsage + gpuWattUsage + ramWattUsage;
               const totalEnergyUsed = (totalWattUsage * sessionDuration) / 3600; // kWh
 
               // Define carbon intensity (kg CO2/kWh)
@@ -353,6 +367,7 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 // Check CPU watt usage
 app.get('/cpu_usage', (req, res) => {
@@ -388,6 +403,25 @@ app.get('/gpu_usage', (req, res) => {
       res.status(200).json({ avg_watt_usage: results[0].avg_watt_usage });
     } else {
       res.status(404).json({ error: 'GPU not found' });
+    }
+  });
+});
+
+// Check ram watt usage
+app.get('/ram_usage', (req, res) => {
+  const { model } = req.query;
+  const query = 'SELECT avg_watt_usage FROM ram WHERE ddr_generation = ?';
+  
+  connection.query(query, [model], (err, results) => {
+    if (err) {
+      console.error('Error querying CPU database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (results.length > 0) {
+      res.status(200).json({ avg_watt_usage: results[0].avg_watt_usage });
+    } else {
+      res.status(404).json({ error: 'CPU not found' });
     }
   });
 });
@@ -428,5 +462,24 @@ app.get('/gpu-options', (req, res) => {
     }));
 
     res.status(200).json({ gpuOptions });
+  });
+});
+
+app.get('/ram-options', (req, res) => {
+  const query = 'SELECT ddr_generation FROM ram';
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching RAM options:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Create an array of RAM options
+    const ramOptions = results.map(row => ({
+      label: `${row.ddr_generation}`,
+      value: row.ddr_generation.toString(),
+    }));
+
+    res.status(200).json({ ramOptions });
   });
 });

@@ -16,6 +16,7 @@ import styles from './History.module.css';
 
 export function HistoryComponent() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [organization, setOrganization] = useState<string | null>(null); // Add this line
   const [error, setError] = useState<string>('');
   const [projectName, setProjectName] = useState<string>('');
   const [projectDescription, setProjectDescription] = useState<string>('');
@@ -55,6 +56,7 @@ export function HistoryComponent() {
         if (response.ok) {
           const data = await response.json();
           setUser(data.user); 
+          setOrganization(data.user.organization); // Set the organization here
           fetchUserProjects(data.user.email); 
         } else {
           const result = await response.json();
@@ -138,7 +140,12 @@ export function HistoryComponent() {
     setIsTimerRunning(false);
   
     const token = localStorage.getItem('token');
-    const historyData = { projectName, projectDescription, sessionDuration }; // The project being updated
+    const historyData = { 
+      projectName, 
+      projectDescription, 
+      sessionDuration, 
+      organization // Include organization here
+    };
   
     try {
       // First, fetch carbon emissions
@@ -195,7 +202,7 @@ export function HistoryComponent() {
   
           setSessionHistory(prev => [
             ...prev.filter(session => session.projectName !== historyData.projectName),
-            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions },
+            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions, organization: historyData.organization }, // Include organization in history
           ]);
         } else {
           const result = await updateResponse.json();
@@ -209,7 +216,10 @@ export function HistoryComponent() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({ ...historyData, carbonEmissions }),
+          body: JSON.stringify({ 
+            ...historyData, 
+            carbonEmit: carbonEmissions // Ensure this matches the database column name
+          }), // This now includes organization and carbon emissions
         });
   
         if (historyResponse.ok) {
@@ -220,7 +230,7 @@ export function HistoryComponent() {
   
           setSessionHistory(prev => [
             ...prev,
-            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions },
+            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions, organization: historyData.organization }, // Include organization
           ]);
         } else {
           const result = await historyResponse.json();
@@ -231,7 +241,8 @@ export function HistoryComponent() {
       console.error('Error in endSession:', err);
       setError('An error occurred while recording the session.');
     }
-  };
+};
+
   
   // Save changes from modal
   const handleSaveChanges = async () => {

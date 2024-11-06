@@ -12,12 +12,14 @@ const DeviceForm: React.FC = () => {
   const [device, setDevice] = useState<string | null>(null);
   const [cpu, setCpu] = useState('');
   const [gpu, setGpu] = useState('');
-  const [ram, setRam] = useState('');
+  const [ramType, setRamType] = useState('');
+  const [ramCapacity, setRamCapacity] = useState('');
   const [motherboard, setMotherboard] = useState('');
   const [psu, setPsu] = useState('');
   
   const [cpuOptions, setCpuOptions] = useState<{ label: string; value: string }[]>([]);
   const [gpuOptions, setGpuOptions] = useState<{ label: string; value: string }[]>([]);
+  const [ramOptions, setRamOptions] = useState<{ label: string; value: string }[]>([]);
   
   const { name, email, password, organization } = location.state || {};
 
@@ -27,16 +29,24 @@ const DeviceForm: React.FC = () => {
         const cpuResponse = await axios.get('http://localhost:5000/cpu-options');
         setCpuOptions(
           cpuResponse.data.cpuOptions.map((cpu: { label: string; value: string }) => ({
-            label: cpu.label, // Display full option as label
-            value: cpu.value  // Use model as the unique value
+            label: cpu.label,
+            value: cpu.value
           }))
         );
 
         const gpuResponse = await axios.get('http://localhost:5000/gpu-options');
         setGpuOptions(
           gpuResponse.data.gpuOptions.map((gpu: { label: string; value: string }) => ({
-            label: gpu.label, // Display full option as label
-            value: gpu.value  // Use model as the unique value
+            label: gpu.label,
+            value: gpu.value
+          }))
+        );
+
+        const ramResponse = await axios.get('http://localhost:5000/ram-options');
+        setRamOptions(
+          ramResponse.data.ramOptions.map((ram: { label: string; value: string }) => ({
+            label: ram.label,
+            value: ram.value
           }))
         );
       } catch (error) {
@@ -57,7 +67,8 @@ const DeviceForm: React.FC = () => {
         device,
         cpu,
         gpu,
-        ram,
+        ram: ramType,  // Ensure this is the RAM type
+        capacity: `${ramCapacity}GB`,  // Send the capacity
         motherboard,
         psu
       });
@@ -70,6 +81,7 @@ const DeviceForm: React.FC = () => {
       console.error('Error during submission:', error);
     }
   };
+  
 
   return (
     <div className={classes.container}>
@@ -106,7 +118,7 @@ const DeviceForm: React.FC = () => {
                 placeholder="Select your CPU"
                 value={cpu}
                 onChange={(value) => setCpu(value || '')}
-                data={cpuOptions} // Display optionString, save model
+                data={cpuOptions}
                 required
                 mb="sm"
                 className={classes.inputField}
@@ -116,20 +128,30 @@ const DeviceForm: React.FC = () => {
                 placeholder="Select your GPU"
                 value={gpu}
                 onChange={(value) => setGpu(value || '')}
-                data={gpuOptions} // Display optionString, save model
+                data={gpuOptions}
                 required
                 mb="sm"
                 className={classes.inputField}
+              />
+              <Select
+                label="RAM Type"
+                 placeholder="Select RAM type"
+                 value={ramType}
+                 onChange={(value) => setRamType(value || '')}
+                 data={ramOptions}
+                 required
+                 mb="sm"
+                 className={classes.inputField}
               />
               <TextInput
-                label="RAM"
-                placeholder="Enter your RAM"
-                value={ram}
-                onChange={(e) => setRam(e.currentTarget.value)}
-                required
-                mb="sm"
-                className={classes.inputField}
-              />
+                 label="RAM Capacity (GB)"
+                 placeholder="Enter RAM capacity"
+                 value={ramCapacity}
+                 onChange={(e) => setRamCapacity(e.currentTarget.value)}
+                 required
+                 mb="sm"
+                 className={classes.inputField}
+               />
               <TextInput
                 label="Motherboard"
                 placeholder="Motherboard"
@@ -145,7 +167,7 @@ const DeviceForm: React.FC = () => {
                 value={psu}
                 onChange={(e) => setPsu(e.currentTarget.value)}
                 required
-                mb="sm"
+                mb="lg"
                 className={classes.inputField}
               />
               <Button fullWidth mt="sm" onClick={handleSubmit} className={classes.button} color="green">
