@@ -1,81 +1,157 @@
-import { Container, Title, Button, Text, Card, Image, Group, Badge, Grid, Progress } from '@mantine/core';
-import { IconGlobe, IconBrandGithub, IconBrandTwitter, IconBrandInstagram, IconBrandFacebook } from '@tabler/icons-react';
+import { useState, useEffect } from 'react';
+import { 
+  Container, 
+  Title, 
+  Text, 
+  Card, 
+  Image, 
+  Grid, 
+  Loader, 
+  Stack 
+} from '@mantine/core';
+import styles from './Button.module.css';
 
-export function ButtonComponent() {
+export function HELPComponent() {
+  const [user, setUser] = useState<{
+    name: string;
+    email: string;
+    organization: string;
+    specifications: {
+      GPU: string;
+      CPU: string;
+      motherboard: string;
+      PSU: string;
+      RAM: string;
+      CPU_avg_watt_usage: number | null;
+      GPU_avg_watt_usage: number | null;
+    };
+  } | null>(null);
+
+  const [projects, setProjects] = useState<any[]>([]);
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        setError('No token found, please log in.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:5000/displayuser', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user); // Set the user details
+          fetchUserProjects(data.user.email); // Fetch user projects using email
+        } else {
+          const result = await response.json();
+          setError(result.error || 'Failed to fetch user details.');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setError('An error occurred while fetching user details.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchUserProjects = async (email: string) => {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`http://localhost:5000/user_projects?email=${email}`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data.projects); // Set the projects
+        } else {
+          const result = await response.json();
+          setError(result.error || 'Failed to fetch user projects.');
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        setError('An error occurred while fetching user projects.');
+      }
+    };
+
+    fetchUserDetails();
+  }, []);
+
   return (
-    <Container size="lg">
+    <Container size="lg" className={styles.container}>
       <Grid gutter="md">
-        {/* Left Profile Section */}
         <Grid.Col span={4}>
-          <Card shadow="sm" padding="lg">
+          <Card shadow="sm" padding="lg" className={styles.profileCard}>
             <Image
               src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
               alt="Profile Image"
               radius="xl"
               width={100}
               height={100}
-              mx="auto"
+              className={styles.profileImage}
             />
-            <Text size="lg" style={{ align:'center', fontWeight: 700 }} mt="md">
-              John Doe
-            </Text>
-            <Text style={{ align:'center'}} size="sm" color="dimmed">
-              Full Stack Developer
-            </Text>
-            <Text style={{ align:'center'}} size="sm" color="dimmed">
-              Soma, San Francisco, CA
-            </Text>
-            <Group style={{ flexDirection: 'column', alignItems: 'center', marginTop: '1rem' }}>
-              <Button size="sm" variant="light">Follow</Button>
-              <Button size="sm" variant="outline">Message</Button>
-            </Group>
-
-            <Group style={{ flexDirection: 'column', alignItems: 'flex-start', marginTop: '1.5rem' }}>
-              <Button variant="subtle" fullWidth leftSection={<IconGlobe style={{ width: 20, height: 20 }} stroke={1.5} />}>
-                Website: https://bootdey.com
-              </Button>
-              <Button variant="subtle" fullWidth leftSection={<IconBrandGithub style={{ width: 20, height: 20 }} stroke={1.5} />}>
-                Github: @bootdey
-              </Button>
-              <Button variant="subtle" fullWidth leftSection={<IconBrandTwitter style={{ width: 20, height: 20 }} stroke={1.5} />}>
-                Twitter: @bootdey
-              </Button>
-              <Button variant="subtle" fullWidth leftSection={<IconBrandInstagram style={{ width: 20, height: 20 }} stroke={1.5} />}>
-                Instagram: bootdey
-              </Button>
-              <Button variant="subtle" fullWidth leftSection={<IconBrandFacebook style={{ width: 20, height: 20 }} stroke={1.5} />}>
-                Facebook: bootdey
-              </Button>
-            </Group>
+            <Text className={styles.profileName}>{user?.name || 'N/A'}</Text>
+            <Text className={styles.profileRole}>{user?.organization || 'N/A'}</Text>
           </Card>
         </Grid.Col>
 
-        {/* Right Information Section */}
         <Grid.Col span={8}>
-          <Card shadow="sm" padding="lg">
-            <Title order={4} mb="sm">Full Name</Title>
-            <Text>Kenneth Valdez</Text>
+          <Card shadow="sm" padding="lg" className={styles.infoCard}>
+            {error && <Text color="red">{error}</Text>}
+            {loading ? (
+              <Loader size="lg" style={{ display: 'block', margin: '0 auto' }} />
+            ) : (
+              <Stack>
+                <Title order={4} className={styles.sectionTitle}>Full Name</Title>
+                <Text className={styles.infoText}>{user?.name || 'N/A'}</Text>
 
-            <Title order={4} mt="lg" mb="sm">Email</Title>
-            <Text>fip@jukmuh.al</Text>
+                <Title order={4} className={styles.sectionTitle}>Email</Title>
+                <Text className={styles.infoText}>{user?.email || 'N/A'}</Text>
 
-            <Title order={4} mt="lg" mb="sm">Phone</Title>
-            <Text>(239) 816-9029</Text>
+                <Title order={4} className={styles.sectionTitle}>Organization</Title>
+                <Text className={styles.infoText}>{user?.organization || 'N/A'}</Text>
 
-            <Title order={4} mt="lg" mb="sm">Mobile</Title>
-            <Text>(320) 380-4539</Text>
-
-            <Title order={4} mt="lg" mb="sm">Address</Title>
-            <Text>Soma, San Francisco, CA</Text>
-
-            <Title order={4} mt="lg" mb="sm">
-              <Text component="span" color="blue">Assignment</Text> Project Status
-            </Title>
+                <Title order={4} className={styles.sectionTitle}>User Device Specifications</Title>
+                <Text className={styles.infoText}><strong>GPU:</strong> {user?.specifications.GPU || 'N/A'}</Text>
+                <Text className={styles.infoText}><strong>GPU Average Watt Usage:</strong> {user?.specifications.GPU_avg_watt_usage ?? 'N/A'} W</Text>
+                <Text className={styles.infoText}><strong>CPU:</strong> {user?.specifications.CPU || 'N/A'}</Text>
+                <Text className={styles.infoText}><strong>CPU Average Watt Usage:</strong> {user?.specifications.CPU_avg_watt_usage ?? 'N/A'} W</Text>
+                <Text className={styles.infoText}><strong>Motherboard:</strong> {user?.specifications.motherboard || 'N/A'}</Text>
+                <Text className={styles.infoText}><strong>RAM:</strong> {user?.specifications.RAM || 'N/A'}</Text>
+                <Text className={styles.infoText}><strong>PSU:</strong> {user?.specifications.PSU || 'N/A'}</Text>
+              </Stack>
+            )}
           </Card>
         </Grid.Col>
+      </Grid>
+
+      <Title order={3} className={styles.sectionTitle}>Your Projects</Title>
+      <Grid gutter="md">
+        {projects.length === 0 ? (
+          <Text>No projects found.</Text>
+        ) : (
+          projects.map(project => (
+            <Grid.Col span={4} key={project.id}>
+              <Card shadow="sm" padding="lg" className={styles.projectCard}>
+                <Text fw={500}>{project.project_name}</Text>
+                <Text size="sm">{project.project_description}</Text>
+              </Card>
+            </Grid.Col>
+          ))
+        )}
       </Grid>
     </Container>
   );
 }
 
-export default ButtonComponent;
+export default HELPComponent;

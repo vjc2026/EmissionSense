@@ -465,6 +465,67 @@ app.get('/gpu-options', (req, res) => {
   });
 });
 
+// Endpoint to fetch full user details including organization and device specifications
+app.get('/displayuser', authenticateToken, (req, res) => {
+  const { email } = req.user;
+
+  const userQuery = `
+    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu 
+    FROM users 
+    WHERE email = ?
+  `;
+
+  connection.query(userQuery, [email], (err, userResults) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (userResults.length > 0) {
+      const user = userResults[0];
+      const { cpu, gpu, ram, motherboard, psu } = user;
+
+      // Queries for avg_watt_usage for both CPU and GPU
+      const cpuQuery = `SELECT manufacturer, series, model, avg_watt_usage FROM cpus WHERE model = ?`;
+      const gpuQuery = `SELECT manufacturer, series, model, avg_watt_usage FROM gpus WHERE model = ?`;
+
+      connection.query(cpuQuery, [cpu], (err, cpuResults) => {
+        if (err) {
+          console.error('Error querying CPU database:', err);
+          return res.status(500).json({ error: 'CPU database error' });
+        }
+
+        connection.query(gpuQuery, [gpu], (err, gpuResults) => {
+          if (err) {
+            console.error('Error querying GPU database:', err);
+            return res.status(500).json({ error: 'GPU database error' });
+          }
+
+          // Create the specifications object
+          const specifications = {
+            CPU: cpuResults.length > 0 
+              ? `${cpuResults[0].manufacturer} ${cpuResults[0].series} ${cpuResults[0].model}`
+              : cpu,
+            GPU: gpuResults.length > 0 
+              ? `${gpuResults[0].manufacturer} ${gpuResults[0].series} ${gpuResults[0].model}`
+              : gpu,
+            CPU_avg_watt_usage: cpuResults[0]?.avg_watt_usage || null,
+            GPU_avg_watt_usage: gpuResults[0]?.avg_watt_usage || null,
+            RAM: ram,
+            motherboard: motherboard,
+            PSU: psu
+          };
+
+          res.status(200).json({ user: { ...user, specifications } });
+        });
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  });
+});
+
+
 app.get('/ram-options', (req, res) => {
   const query = 'SELECT ddr_generation FROM ram';
 

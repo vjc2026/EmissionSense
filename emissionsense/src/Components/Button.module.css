@@ -1,32 +1,66 @@
+.container {
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+}
+
 .profileCard {
-  background: linear-gradient(135deg, #f0f4ff, #d9e6f6);
   text-align: center;
-}
-
-.profileFlex {
+  border-radius: 8px;
+  padding: 2rem 1.5rem; /* Increased padding for better balance */
+  background-color: #fff;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
 }
 
-.profileAvatar {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+.profileImage {
+  width: 120px; /* Larger width */
+  height: 120px; /* Larger height */
+  border: 3px solid #ccc; /* Thicker border for emphasis */
+  padding: 0.3rem;
+  border-radius: 50%;
+  object-fit: cover; /* Ensures the image fits within the circle without distortion */
+  margin-bottom: 1rem;
 }
 
-.buttonGroup {
+.profileName {
+  font-size: 1.4rem; /* Slightly increased for better visibility */
+  font-weight: 600;
+  color: #333;
+  margin-top: 0.5rem;
+}
+
+.profileRole {
+  font-size: 1rem;
+  color: #777;
+}
+
+.infoCard {
+  padding: 1.5rem; /* Increased padding for spacing */
+  border-radius: 8px;
+  background-color: #fff;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 20px;
+  justify-content: center;
 }
 
-.progressContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #555;
+  margin: 0.5rem 0 0.3rem;
 }
 
-.progressItem {
-  margin-bottom: 16px;
+.infoText {
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.4;
+}
+
+.infoText strong {
+  color: #555;
+  font-weight: 500;
 }
