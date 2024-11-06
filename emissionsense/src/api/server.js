@@ -319,8 +319,8 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
   const userId = req.user.id; // Get user ID from the authenticated token
 
   try {
-      // Fetch user's CPU and GPU details
-      const userQuery = `SELECT cpu, gpu, ram FROM users WHERE id = ?`;
+      // Fetch user's CPU, GPU, RAM, and PSU details
+      const userQuery = `SELECT cpu, gpu, ram, psu FROM users WHERE id = ?`;
       connection.query(userQuery, [userId], async (err, userResults) => {
           if (err) {
               console.error('Error fetching user details:', err);
@@ -331,14 +331,14 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
               return res.status(404).json({ error: 'User not found' });
           }
 
-          const { cpu, gpu, ram} = userResults[0];
+          const { cpu, gpu, ram, psu } = userResults[0];
 
-          // Fetch CPU and GPU wattage
+          // Fetch CPU, GPU, and RAM wattage
           const cpuResponse = await fetch(`http://localhost:5000/cpu_usage?model=${cpu}`);
           const gpuResponse = await fetch(`http://localhost:5000/gpu_usage?model=${gpu}`);
           const ramResponse = await fetch(`http://localhost:5000/ram_usage?model=${ram}`);
 
-          if (cpuResponse.ok && gpuResponse.ok) {
+          if (cpuResponse.ok && gpuResponse.ok && ramResponse.ok) {
               const cpuData = await cpuResponse.json();
               const gpuData = await gpuResponse.json();
               const ramData = await ramResponse.json();
@@ -347,8 +347,11 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
               const gpuWattUsage = gpuData.avg_watt_usage;
               const ramWattUsage = ramData.avg_watt_usage;
 
+              // Add PSU wattage
+              const psuWattUsage = psu; // Assuming 'psu' in the database stores the wattage directly
+
               // Calculate total power consumption (in kWh)
-              const totalWattUsage = cpuWattUsage + gpuWattUsage + ramWattUsage;
+              const totalWattUsage = cpuWattUsage + gpuWattUsage + ramWattUsage + psuWattUsage;
               const totalEnergyUsed = (totalWattUsage * sessionDuration) / 3600; // kWh
 
               // Define carbon intensity (kg CO2/kWh)
@@ -367,6 +370,7 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
 
 
 // Check CPU watt usage
