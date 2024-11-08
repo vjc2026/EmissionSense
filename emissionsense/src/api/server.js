@@ -313,7 +313,7 @@ app.post('/find_project', authenticateToken, (req, res) => {
   });
 });
 
-// Endpoint to calculate carbon emissions
+// Endpoint to calculate carbon emissions for pc personal computer
 app.post('/calculate_emissions', authenticateToken, async (req, res) => {
   const { sessionDuration } = req.body; // Get session duration from the request body
   const userId = req.user.id; // Get user ID from the authenticated token
@@ -368,8 +368,7 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
   }
 });
 
-
-// Check CPU watt usage
+// Check CPU watt usage for pc personal computer
 app.get('/cpu_usage', (req, res) => {
   const { model } = req.query;
   const query = 'SELECT avg_watt_usage FROM cpus WHERE model = ?';
@@ -388,7 +387,7 @@ app.get('/cpu_usage', (req, res) => {
   });
 });
 
-// Check GPU watt usage
+// Check GPU watt usage for pc personal computer
 app.get('/gpu_usage', (req, res) => {
   const { model } = req.query;
   const query = 'SELECT avg_watt_usage FROM gpus WHERE model = ?';
@@ -407,7 +406,100 @@ app.get('/gpu_usage', (req, res) => {
   });
 });
 
-// Check ram watt usage
+// Endpoint to calculate carbon emissions for mobile or laptop
+app.post('/calculate_emissionsM', authenticateToken, async (req, res) => {
+  const { sessionDuration } = req.body; // Get session duration from the request body
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  try {
+      // Fetch user's CPU and GPU details
+      const userQuery = `SELECT cpu, gpu, ram FROM users WHERE id = ?`;
+      connection.query(userQuery, [userId], async (err, userResults) => {
+          if (err) {
+              console.error('Error fetching user details:', err);
+              return res.status(500).json({ error: 'Database error' });
+          }
+
+          if (userResults.length === 0) {
+              return res.status(404).json({ error: 'User not found' });
+          }
+
+          const { cpu, gpu, ram} = userResults[0];
+
+          // Fetch CPU and GPU wattage
+          const cpuResponse = await fetch(`http://localhost:5000/cpum_usage?model=${cpu}`);
+          const gpuResponse = await fetch(`http://localhost:5000/gpum_usage?model=${gpu}`);
+          const ramResponse = await fetch(`http://localhost:5000/ram_usage?model=${ram}`);
+
+          if (cpuResponse.ok && gpuResponse.ok) {
+              const cpuData = await cpuResponse.json();
+              const gpuData = await gpuResponse.json();
+              const ramData = await ramResponse.json();
+
+              const cpuWattUsage = cpuData.watts;
+              const gpuWattUsage = gpuData.watts;
+              const ramWattUsage = ramData.avg_watt_usage;
+
+              // Calculate total power consumption (in kWh)
+              const totalWattUsage = cpuWattUsage + gpuWattUsage + ramWattUsage;
+              const totalEnergyUsed = (totalWattUsage * sessionDuration) / 3600; // kWh
+
+              // Define carbon intensity (kg CO2/kWh)
+              const CARBON_INTENSITY = 0.475; // Example value, adjust based on your region
+
+              // Calculate carbon emissions
+              const carbonEmissions = totalEnergyUsed * CARBON_INTENSITY; // in kg CO2e
+
+              res.status(200).json({ carbonEmissions });
+          } else {
+              return res.status(500).json({ error: 'Error fetching wattage data' });
+          }
+      });
+  } catch (error) {
+      console.error('Error calculating carbon emissions:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Check CPU watt usage for mobile or laptop
+app.get('/cpum_usage', (req, res) => {
+  const { model } = req.query;
+  const query = 'SELECT watts FROM cpusm WHERE model = ?';
+  
+  connection.query(query, [model], (err, results) => {
+    if (err) {
+      console.error('Error querying CPU database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (results.length > 0) {
+      res.status(200).json({ watts: results[0].watts });
+    } else {
+      res.status(404).json({ error: 'CPUm not found' });
+    }
+  });
+});
+
+// Check GPU watt usage for mobile or laptop
+app.get('/gpum_usage', (req, res) => {
+  const { model } = req.query;
+  const query = 'SELECT watts FROM gpusm WHERE model = ?';
+  
+  connection.query(query, [model], (err, results) => {
+    if (err) {
+      console.error('Error querying GPU database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (results.length > 0) {
+      res.status(200).json({ watts: results[0].watts });
+    } else {
+      res.status(404).json({ error: 'GPUm not found' });
+    }
+  });
+});
+
+// Check ram watt usage for mobile or laptop
 app.get('/ram_usage', (req, res) => {
   const { model } = req.query;
   const query = 'SELECT avg_watt_usage FROM ram WHERE ddr_generation = ?';
@@ -465,7 +557,45 @@ app.get('/gpu-options', (req, res) => {
   });
 });
 
-// Endpoint to fetch full user details including organization and device specifications
+app.get('/cpu-options-mobile', (req, res) => {
+  const query = 'SELECT generation, model FROM cpusm';
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching CPUm options:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Return an array of objects with optionString and model
+    const cpuOptions = results.map(row => ({
+      label: `${row.generation} ${row.model}`, // Display string
+      value: row.model // Unique model value
+    }));
+
+    res.status(200).json({ cpuOptions }); // Now matches frontend expectation
+  });
+});
+
+app.get('/gpu-options-mobile', (req, res) => {
+  const query = 'SELECT manufacturer, model FROM gpusm';
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching GPUm options:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Return an array of objects with optionString and model
+    const gpuOptions = results.map(row => ({
+      label: `${row.manufacturer} ${row.model}`, // Display string
+      value: row.model // Unique model value
+    }));
+
+    res.status(200).json({ gpuOptions }); // Now matches frontend expectation
+  });
+});
+
+// Endpoint to fetch full user details including organization and device specifications for personal computer
 app.get('/displayuser', authenticateToken, (req, res) => {
   const { email } = req.user;
 
@@ -519,6 +649,87 @@ app.get('/displayuser', authenticateToken, (req, res) => {
           res.status(200).json({ user: { ...user, specifications } });
         });
       });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  });
+});
+
+// Endpoint to fetch full user details including organization and device specifications for mobile or laptop
+app.get('/displayuserM', authenticateToken, (req, res) => {
+  const { email } = req.user;
+
+  const userQuery = `
+    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu 
+    FROM users 
+    WHERE email = ?
+  `;
+
+  connection.query(userQuery, [email], (err, userResults) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (userResults.length > 0) {
+      const user = userResults[0];
+      const { cpu, gpu, ram, motherboard, psu } = user;
+
+      // Queries for avg_watt_usage for both CPU and GPU
+      const cpuQuery = `SELECT generation, model, watts FROM cpusm WHERE model = ?`;
+      const gpuQuery = `SELECT manufacturer, model, watts FROM gpusm WHERE model = ?`;
+
+      connection.query(cpuQuery, [cpu], (err, cpuResults) => {
+        if (err) {
+          console.error('Error querying CPU database:', err);
+          return res.status(500).json({ error: 'CPU database error' });
+        }
+
+        connection.query(gpuQuery, [gpu], (err, gpuResults) => {
+          if (err) {
+            console.error('Error querying GPU database:', err);
+            return res.status(500).json({ error: 'GPU database error' });
+          }
+
+          // Create the specifications object
+          const specifications = {
+            CPU: cpuResults.length > 0 
+              ? `${cpuResults[0].generation} ${cpuResults[0].model}`
+              : cpu,
+            GPU: gpuResults.length > 0 
+              ? `${gpuResults[0].manufacturer} ${gpuResults[0].model}`
+              : gpu,
+            CPU_avg_watt_usage: cpuResults[0]?.watts || null,
+            GPU_avg_watt_usage: gpuResults[0]?.watts || null,
+            RAM: ram,
+            motherboard: motherboard,
+            PSU: psu
+          };
+
+          res.status(200).json({ user: { ...user, specifications } });
+        });
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  });
+});
+
+// Endpoint to check device type (Laptop or Personal Computer)
+app.get('/checkDeviceType', authenticateToken, (req, res) => {
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `SELECT device FROM users WHERE id = ?`;
+
+  connection.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error querying device type from database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      const deviceType = results[0].device;
+      res.status(200).json({ deviceType }); // Return the device type (Laptop or Personal Computer)
     } else {
       res.status(404).json({ error: 'User not found' });
     }

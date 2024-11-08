@@ -26,22 +26,29 @@ const DeviceForm: React.FC = () => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const cpuResponse = await axios.get('http://localhost:5000/cpu-options');
+        // Check the endpoint based on device selection
+        const cpuEndpoint = device === 'Laptop' ? 'cpu-options-mobile' : 'cpu-options';
+        console.log(`Fetching CPU options from: ${cpuEndpoint}`);
+  
+        const cpuResponse = await axios.get(`http://localhost:5000/${cpuEndpoint}`);
         setCpuOptions(
           cpuResponse.data.cpuOptions.map((cpu: { label: string; value: string }) => ({
             label: cpu.label,
             value: cpu.value
           }))
         );
-
-        const gpuResponse = await axios.get('http://localhost:5000/gpu-options');
+  
+        // Fetch GPU options
+        const gpuEndpoint = device === 'Laptop' ? 'gpu-options-mobile' : 'gpu-options';
+        const gpuResponse = await axios.get(`http://localhost:5000/${gpuEndpoint}`);
         setGpuOptions(
           gpuResponse.data.gpuOptions.map((gpu: { label: string; value: string }) => ({
             label: gpu.label,
             value: gpu.value
           }))
         );
-
+  
+        // Fetch RAM options
         const ramResponse = await axios.get('http://localhost:5000/ram-options');
         setRamOptions(
           ramResponse.data.ramOptions.map((ram: { label: string; value: string }) => ({
@@ -49,13 +56,20 @@ const DeviceForm: React.FC = () => {
             value: ram.value
           }))
         );
+  
+        console.log("Options successfully fetched");
       } catch (error) {
         console.error('Error fetching options:', error);
       }
     };
-    
-    fetchOptions();
-  }, []);
+  
+    if (device) {
+      console.log(`Device selected: ${device}`);
+      fetchOptions();
+    }
+  }, [device]); // Re-fetch options when the device changes
+  
+  
 
   const handleSubmit = async () => {
     try {

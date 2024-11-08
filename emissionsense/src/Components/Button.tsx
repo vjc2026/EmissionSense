@@ -27,6 +27,7 @@ export function HELPComponent() {
     };
   } | null>(null);
 
+  const [deviceType, setDeviceType] = useState<string | null>(null); // State for device type
   const [projects, setProjects] = useState<any[]>([]);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -42,17 +43,30 @@ export function HELPComponent() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/displayuser', {
+        // Fetch device type to determine endpoint
+        const response = await fetch('http://localhost:5000/checkDeviceType', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
 
-        if (response.ok) {
-          const data = await response.json();
+        const { deviceType } = await response.json();
+        setDeviceType(deviceType); // Set device type state
+
+        const endpoint = deviceType === 'Laptop' 
+          ? 'http://localhost:5000/displayuserM' 
+          : 'http://localhost:5000/displayuser';
+
+        const userResponse = await fetch(endpoint, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (userResponse.ok) {
+          const data = await userResponse.json();
           setUser(data.user); // Set the user details
           fetchUserProjects(data.user.email); // Fetch user projects using email
         } else {
-          const result = await response.json();
+          const result = await userResponse.json();
           setError(result.error || 'Failed to fetch user details.');
         }
       } catch (err) {
@@ -122,6 +136,7 @@ export function HELPComponent() {
                 <Text className={styles.infoText}>{user?.organization || 'N/A'}</Text>
 
                 <Title order={4} className={styles.sectionTitle}>User Device Specifications</Title>
+                <Text className={styles.infoText}><strong>Device Using:</strong> {deviceType || 'N/A'}</Text>
                 <Text className={styles.infoText}><strong>GPU:</strong> {user?.specifications.GPU || 'N/A'}</Text>
                 <Text className={styles.infoText}><strong>GPU Average Watt Usage:</strong> {user?.specifications.GPU_avg_watt_usage ?? 'N/A'} W</Text>
                 <Text className={styles.infoText}><strong>CPU:</strong> {user?.specifications.CPU || 'N/A'}</Text>
