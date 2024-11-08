@@ -139,112 +139,126 @@ export function HistoryComponent() {
     if (!isTimerRunning) return;
     clearInterval(intervalId!);
     setIsTimerRunning(false);
-  
+
     const token = localStorage.getItem('token');
     const historyData = { 
-      projectName, 
-      projectDescription, 
-      sessionDuration, 
-      organization // Include organization here
+        projectName, 
+        projectDescription, 
+        sessionDuration, 
+        organization 
     };
-  
+
     try {
-      // First, fetch carbon emissions
-      const emissionsResponse = await fetch('http://localhost:5000/calculate_emissions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ sessionDuration }), 
-      });
-  
-      if (!emissionsResponse.ok) {
-        throw new Error(`Failed to calculate emissions: ${emissionsResponse.statusText}`);
-      }
-  
-      const { carbonEmissions } = await emissionsResponse.json();
-      console.log(`Calculated Carbon Emissions: ${carbonEmissions} kg CO2`);
-  
-      // Next, find the existing project
-      const projectResponse = await fetch('http://localhost:5000/find_project', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ projectName, projectDescription }),
-      });
-  
-      if (!projectResponse.ok) {
-        throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
-      }
-  
-      const existingProject = await projectResponse.json();
-      console.log("Existing project found:", existingProject);
-  
-      // If the project exists, update it
-      if (existingProject) {
-        const updateResponse = await fetch('http://localhost:5000/user_Update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ ...historyData, carbonEmissions }),
+        // Fetch the device type (Laptop or Personal Computer)
+        const deviceTypeResponse = await fetch('http://localhost:5000/checkDeviceType', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
         });
-  
-        if (updateResponse.ok) {
-          // Reset fields and refresh project list after update
-          setProjectName('');
-          setProjectDescription('');
-          setSessionDuration(0);
-          fetchUserProjects(user?.email!); // Ensure user is defined before calling
-  
-          setSessionHistory(prev => [
-            ...prev.filter(session => session.projectName !== historyData.projectName),
-            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions, organization: historyData.organization }, // Include organization in history
-          ]);
-        } else {
-          const result = await updateResponse.json();
-          setError(result.error || 'Failed to record session.');
+
+        if (!deviceTypeResponse.ok) {
+            throw new Error(`Failed to fetch device type: ${deviceTypeResponse.statusText}`);
         }
-      } else {
-        // If no existing project, create a new history entry
-        const historyResponse = await fetch('http://localhost:5000/user_history', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ 
-            ...historyData, 
-            carbonEmit: carbonEmissions // Ensure this matches the database column name
-          }), // This now includes organization and carbon emissions
+
+        const { deviceType } = await deviceTypeResponse.json();
+
+        // Choose the emissions calculation endpoint based on the device type
+        const emissionsEndpoint = deviceType === 'Laptop' 
+            ? 'http://localhost:5000/calculate_emissionsM'
+            : 'http://localhost:5000/calculate_emissions';
+
+        // Fetch carbon emissions
+        const emissionsResponse = await fetch(emissionsEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ sessionDuration }), 
         });
-  
-        if (historyResponse.ok) {
-          setProjectName('');
-          setProjectDescription('');
-          setSessionDuration(0);
-          fetchUserProjects(user?.email!); 
-  
-          setSessionHistory(prev => [
-            ...prev,
-            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions, organization: historyData.organization }, // Include organization
-          ]);
-        } else {
-          const result = await historyResponse.json();
-          setError(result.error || 'Failed to record session.');
+
+        if (!emissionsResponse.ok) {
+            throw new Error(`Failed to calculate emissions: ${emissionsResponse.statusText}`);
         }
-      }
+
+        const { carbonEmissions } = await emissionsResponse.json();
+        console.log(`Calculated Carbon Emissions: ${carbonEmissions} kg CO2`);
+
+        // Fetch or create project history
+        const projectResponse = await fetch('http://localhost:5000/find_project', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ projectName, projectDescription }),
+        });
+
+        if (!projectResponse.ok) {
+            throw new Error(`Failed to fetch project: ${projectResponse.statusText}`);
+        }
+
+        const existingProject = await projectResponse.json();
+        console.log("Existing project found:", existingProject);
+
+        if (existingProject) {
+            // Update existing project
+            const updateResponse = await fetch('http://localhost:5000/user_Update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ ...historyData, carbonEmissions }),
+            });
+
+            if (updateResponse.ok) {
+                setProjectName('');
+                setProjectDescription('');
+                setSessionDuration(0);
+                fetchUserProjects(user?.email!); 
+
+                setSessionHistory(prev => [
+                    ...prev.filter(session => session.projectName !== historyData.projectName),
+                    { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions, organization: historyData.organization },
+                ]);
+            } else {
+                const result = await updateResponse.json();
+                setError(result.error || 'Failed to record session.');
+            }
+        } else {
+            // Create new project history
+            const historyResponse = await fetch('http://localhost:5000/user_history', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ ...historyData, carbonEmit: carbonEmissions }),
+            });
+
+            if (historyResponse.ok) {
+                setProjectName('');
+                setProjectDescription('');
+                setSessionDuration(0);
+                fetchUserProjects(user?.email!);
+
+                setSessionHistory(prev => [
+                    ...prev,
+                    { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions, organization: historyData.organization },
+                ]);
+            } else {
+                const result = await historyResponse.json();
+                setError(result.error || 'Failed to record session.');
+            }
+        }
     } catch (err) {
-      console.error('Error in endSession:', err);
-      setError('An error occurred while recording the session.');
+        console.error('Error in endSession:', err);
+        setError('An error occurred while recording the session.');
     }
 };
 
-  
   // Save changes from modal
   const handleSaveChanges = async () => {
     if (!editableProject) return;
