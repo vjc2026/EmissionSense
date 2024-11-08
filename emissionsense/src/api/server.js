@@ -157,7 +157,7 @@ app.get('/user', authenticateToken, (req, res) => {
 });
 
 app.post('/user_history', authenticateToken, (req, res) => {
-  const { organization, projectName, projectDescription, sessionDuration, carbonEmit } = req.body;
+  const { organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   // Log the data being inserted
@@ -167,15 +167,16 @@ app.post('/user_history', authenticateToken, (req, res) => {
     projectName,
     projectDescription,
     sessionDuration,
-    carbonEmit
+    carbonEmit,
+    projectStage // Log the new field
   });
 
   const query = `
-    INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit, stage)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [userId, organization, projectName, projectDescription, sessionDuration, carbonEmit], (err, results) => {
+  connection.query(query, [userId, organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage], (err, results) => {
     if (err) {
       console.error('Error inserting session data into the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -184,6 +185,7 @@ app.post('/user_history', authenticateToken, (req, res) => {
     res.status(200).json({ message: 'Session recorded successfully' });
   });
 });
+
 
 
 // Endpoint to fetch user's projects

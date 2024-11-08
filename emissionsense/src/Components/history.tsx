@@ -10,7 +10,8 @@ import {
   Divider, 
   Stack, 
   Title, 
-  Modal 
+  Modal,
+  Select
 } from '@mantine/core';
 import styles from './History.module.css';
 
@@ -305,66 +306,80 @@ export function HistoryComponent() {
     }
   };
 
-  return (
-    <Container className={styles.container}>
-      <Title order={1} className={styles.title}>
-        Session Tracker
-      </Title>
-  
-      {error && (
-        <Text className={styles.errorText}>
-          {error}
-        </Text>
-      )}
-  
-      {loading ? (
-        <Loader size="lg" style={{ display: 'block', margin: '0 auto' }} />
-      ) : (
-        <Stack mt="md">
-          <TextInput
-            placeholder="Project Name"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            style={{ width: '100%' }}
-          />
-          
-          <TextInput
-            placeholder="Project Description"
-            value={projectDescription}
-            onChange={(e) => setProjectDescription(e.target.value)}
-            style={{ width: '100%' }}
-          />
 
-          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
-            Current Duration: {formatDuration(sessionDuration)}
-          </Text>
-          
-          <Group mt="md" align="center" style={{ marginTop: 15 }}>
-            <Button onClick={startSession} disabled={isTimerRunning}>
-              Start Session
-            </Button>
-            <Button onClick={endSession} disabled={!isTimerRunning} color="red">
-              End Session
-            </Button>
-          </Group>    
-          
-          <Divider style={{ width: '100%', margin: '20px 0' }} />
-          
-          <Title order={3} className={styles.historyTitle}>
-            Project History
-          </Title>
-          
-          {projects.map((project) => {
-            const totalCarbonEmissions = sessionHistory
-              .filter(session => session.projectName === project.project_name)
-              .reduce((acc, session) => acc + session.carbonEmissions, 0);
-  
-            return (
+// Inside the HistoryComponent
+return (
+  <Container className={styles.container}>
+    <Title order={1} className={styles.title}>
+      Session Tracker
+    </Title>
+
+    {error && (
+      <Text className={styles.errorText}>
+        {error}
+      </Text>
+    )}
+
+    {loading ? (
+      <Loader size="lg" style={{ display: 'block', margin: '0 auto' }} />
+    ) : (
+      <Stack mt="md">
+        <TextInput
+          placeholder="Project Name"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          style={{ width: '100%' }}
+        />
+        
+        <TextInput
+          placeholder="Project Description"
+          value={projectDescription}
+          onChange={(e) => setProjectDescription(e.target.value)}
+          style={{ width: '100%' }}
+        />
+
+        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
+          Current Duration: {formatDuration(sessionDuration)}
+        </Text>
+        
+        <Group mt="md" align="center" style={{ marginTop: 15 }}>
+          <Button onClick={startSession} disabled={isTimerRunning}>
+            Start Session
+          </Button>
+          <Button onClick={endSession} disabled={!isTimerRunning} color="red">
+            End Session
+          </Button>
+        </Group>    
+        
+        <Divider style={{ width: '100%', margin: '20px 0' }} />
+        
+        <Title order={3} className={styles.historyTitle}>
+          Project History
+        </Title>
+        
+        {projects.map((project) => {
+          const totalCarbonEmissions = sessionHistory
+            .filter(session => session.projectName === project.project_name)
+            .reduce((acc, session) => acc + session.carbonEmissions, 0);
+
+          return (
             <Card key={project.id} className={styles.projectCard}>
               <Text className={styles.projectName}>Project Name: {project.project_name}</Text>
               <Text className={styles.projectDescription}>Description: {project.project_description}</Text>
               <Text className={styles.historyDetails}>Session Duration: {formatDuration(project.session_duration)}</Text>
               <Text className={styles.historyDetails}>Carbon Emissions: {totalCarbonEmissions.toFixed(4)} kg CO2</Text>
+
+              {/* Dropdown menu for selecting project stage */}
+              <Select
+                label="Project Stage"
+                placeholder="Select a stage"
+                data={[
+                  { value: 'design', label: 'Design: Creating the software architecture' },
+                  { value: 'development', label: 'Development: Writing the actual code' },
+                  { value: 'testing', label: 'Testing: Ensuring the software works as expected' },
+                ]}
+                className={styles.projectStageDropdown}
+              />
 
               <Group className={styles.buttonGroup}>
                 <Button size="xs" onClick={() => handleEditProject(project.id)}>
@@ -375,29 +390,29 @@ export function HistoryComponent() {
                 </Button>
               </Group>
             </Card>
-            );
-          })}
-        </Stack>
-      )}
-  
-      {/* Modal for editing project */}
-      <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Project">
-        <TextInput 
-          placeholder="Project Name" 
-          value={projectName} 
-          onChange={(e) => setProjectName(e.target.value)} 
-        />
-        <TextInput 
-          placeholder="Project Description" 
-          value={projectDescription} 
-          onChange={(e) => setProjectDescription(e.target.value)} 
-        />
-        <Group align="right" mt="md">
-          <Button onClick={handleSaveChanges}>Save Changes</Button>
-        </Group>
-      </Modal>
-    </Container>
-  );
+          );
+        })}
+      </Stack>
+    )}
+
+    {/* Modal for editing project */}
+    <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Project">
+      <TextInput 
+        placeholder="Project Name" 
+        value={projectName} 
+        onChange={(e) => setProjectName(e.target.value)} 
+      />
+      <TextInput 
+        placeholder="Project Description" 
+        value={projectDescription} 
+        onChange={(e) => setProjectDescription(e.target.value)} 
+      />
+      <Group align="right" mt="md">
+        <Button onClick={handleSaveChanges}>Save Changes</Button>
+      </Group>
+    </Modal>
+  </Container>
+);
 }
 
 export default HistoryComponent;
