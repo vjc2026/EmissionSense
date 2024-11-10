@@ -8,7 +8,8 @@ export function StatisticsComponent() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-
+  const [organization, setOrganization] = useState<string>('');
+  
   useEffect(() => {
     const fetchProjects = async () => {
       const token = localStorage.getItem('token');
@@ -20,17 +21,30 @@ export function StatisticsComponent() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/user_projects', {
+        const userResponse = await fetch('http://localhost:5000/user', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data.projects);
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setOrganization(userData.user.organization);
+
+          const projectsResponse = await fetch(`http://localhost:5000/organization_projects?organization=${userData.user.organization}`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (projectsResponse.ok) {
+            const projectsData = await projectsResponse.json();
+            setProjects(projectsData.projects);
+          } else {
+            const result = await projectsResponse.json();
+            setError(result.error || 'Failed to fetch projects.');
+          }
         } else {
-          const result = await response.json();
-          setError(result.error || 'Failed to fetch projects.');
+          const result = await userResponse.json();
+          setError(result.error || 'Failed to fetch user details.');
         }
       } catch (err) {
         console.error('Error:', err);
@@ -49,7 +63,7 @@ export function StatisticsComponent() {
 
   return (
     <Container>
-      <Title order={1}>Project Statistics</Title>
+      <Title order={1}>Organization: {organization}</Title>
 
       {error && <Text color="red">{error}</Text>}
 
@@ -59,6 +73,7 @@ export function StatisticsComponent() {
         <Stack mt="md">
           {projects.map((project) => (
             <Card key={project.id} className={classes.projectCard}>
+              <Text className={classes.projectOwner}>Owner: {project.owner}</Text>
               <Text className={classes.projectName}>Project Name: {project.project_name}</Text>
               <Text className={classes.projectDescription}>Description: {project.project_description}</Text>
               <Text className={classes.historyDetails}>Session Duration: {project.session_duration} seconds</Text>
@@ -76,77 +91,3 @@ export function StatisticsComponent() {
 }
 
 export default StatisticsComponent;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

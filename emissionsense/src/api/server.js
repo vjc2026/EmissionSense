@@ -767,6 +767,26 @@ app.get('/checkDeviceType', authenticateToken, (req, res) => {
   });
 });
 
+app.get('/organization_projects', authenticateToken, (req, res) => {
+  const { organization } = req.query;
+
+  const query = `
+    SELECT uh.id, uh.project_name, uh.project_description, uh.session_duration, uh.carbon_emit, u.name AS owner
+    FROM user_history uh
+    JOIN users u ON uh.user_id = u.id
+    WHERE uh.organization = ?
+  `;
+
+  connection.query(query, [organization], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ projects: results });
+  });
+});
+
 // Endpoint to check the stage type (project)
 app.post('/checkStageType', authenticateToken, (req, res) => {
   const { projectName, projectDescription } = req.body;

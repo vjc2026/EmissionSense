@@ -9,6 +9,7 @@
     "@mantine/core": "^7.12.2",
     "@mantine/dates": "^7.12.2",
     "@mantine/dropzone": "^7.12.2",
+    "@mantine/emotion": "^7.13.5",
     "@mantine/form": "^7.12.2",
     "@mantine/hooks": "^7.12.2",
     "@mantine/modals": "^7.12.2",
