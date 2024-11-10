@@ -21,7 +21,7 @@ const DeviceForm: React.FC = () => {
   const [gpuOptions, setGpuOptions] = useState<{ label: string; value: string }[]>([]);
   const [ramOptions, setRamOptions] = useState<{ label: string; value: string }[]>([]);
   
-  const { name, email, password, organization } = location.state || {};
+  const { name, email, password, organization, profilePicture } = location.state || {};
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -69,25 +69,32 @@ const DeviceForm: React.FC = () => {
     }
   }, [device]); // Re-fetch options when the device changes
   
-  
-
   const handleSubmit = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/register', {
-        name,
-        email,
-        password,
-        organization,
-        device,
-        cpu,
-        gpu,
-        ram: ramType,  // Ensure this is the RAM type
-        capacity: `${ramCapacity}GB`,  // Send the capacity
-        motherboard,
-        psu
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('email', email);
+      formData.append('password', password);
+      formData.append('organization', organization);
+      formData.append('device', device || '');
+      formData.append('cpu', cpu);
+      formData.append('gpu', gpu);
+      formData.append('ram', ramType);  // Ensure this is the RAM type
+      formData.append('capacity', `${ramCapacity}GB`);  // Send the capacity
+      formData.append('motherboard', motherboard);
+      formData.append('psu', psu);
+      if (profilePicture) {
+        formData.append('profilePicture', profilePicture);
+      }
+
+      const response = await axios.post('http://localhost:5000/register', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
+
       if (response.status === 200) {
-        navigate('/main');
+        navigate('/');
       } else {
         console.error('Error saving user data');
       }
@@ -95,7 +102,6 @@ const DeviceForm: React.FC = () => {
       console.error('Error during submission:', error);
     }
   };
-  
 
   return (
     <div className={classes.container}>

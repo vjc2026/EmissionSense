@@ -631,7 +631,7 @@ app.get('/displayuser', authenticateToken, (req, res) => {
   const { email } = req.user;
 
   const userQuery = `
-    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu 
+    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu, profile_image
     FROM users 
     WHERE email = ?
   `;
@@ -691,7 +691,7 @@ app.get('/displayuserM', authenticateToken, (req, res) => {
   const { email } = req.user;
 
   const userQuery = `
-    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu 
+    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu, profile_image
     FROM users 
     WHERE email = ?
   `;

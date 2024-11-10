@@ -15,20 +15,21 @@ import {
   Tooltip,
 } from '@mantine/core';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import classes from './Register.module.css';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { GoogleButton } from './GoogleButton';
 
 const RegisterPage: React.FC = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const [name, setName] = useState(location.state?.name || '');
+  const [email, setEmail] = useState(location.state?.email || '');
   const [emailExists, setEmailExists] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [organization, setOrganization] = useState('');
+  const [organization, setOrganization] = useState(location.state?.organization || '');
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(location.state?.profilePicturePreview || null);
   const navigate = useNavigate();
 
   const handleLogin = () => {
@@ -120,7 +121,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleProceed = () => {
-    if (!name || !email || !password || !organization || password !== confirmPassword) {
+    if (!name || !email || !organization || (password && password !== confirmPassword)) {
       alert('Please fill all fields and ensure the passwords match.');
       return;
     }
@@ -136,6 +137,7 @@ const RegisterPage: React.FC = () => {
         password,
         organization,
         profilePicture,
+        profilePicturePreview,
       },
     });
   };
@@ -144,7 +146,7 @@ const RegisterPage: React.FC = () => {
     <div className={classes.container}>
       <Container size={460} my={30} className={classes.formContainer}>
         <Title className={classes.title} ta="center" style={{ textShadow: '1px 1px 10px rgba(0, 0, 0, 0.6)' }}>
-          Create your Account.
+          {location.state ? 'Update your Profile' : 'Create your Account'}
         </Title>
         <Text c="white" fz="sm" ta="center" style={{ textShadow: '1px 1px 10px rgba(0, 0, 0, 0.6)' }}>
           Enter your information.
@@ -202,7 +204,6 @@ const RegisterPage: React.FC = () => {
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.currentTarget.value)}
-            required
             style={{ color: 'white' }}
           />
           <PasswordInput
@@ -211,7 +212,6 @@ const RegisterPage: React.FC = () => {
             placeholder="Repeat your password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.currentTarget.value)}
-            required
             style={{ color: 'white' }}
           />
           <TextInput
