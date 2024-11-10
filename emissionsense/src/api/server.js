@@ -6,6 +6,7 @@ const multer = require('multer');
 const mysql = require('mysql2');
 require('dotenv').config();
 
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key'; // Use environment variable for secret key
@@ -32,6 +33,24 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+   cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+   cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage });
+
+  // Ensure the uploads directory exists
+  const fs = require('fs');
+  const uploadsDir = path.join(__dirname, 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+
 app.post('/check-email', (req, res) => {
   const { email } = req.body;
 
@@ -53,21 +72,22 @@ app.post('/check-email', (req, res) => {
 });
 
 // Endpoint to insert user data into the MySQL database
-app.post('/register', (req, res) => {
+app.post('/register', upload.single('profilePicture'), (req, res) => {
   const { name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu } = req.body;
+  const profilePicture = req.file ? req.file.filename : null;
 
   const query = `
-    INSERT INTO users (name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   INSERT INTO users (name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu, profile_image)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu], (err, results) => {
-    if (err) {
-      console.error('Error inserting data into the database:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
+  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu, profilePicture], (err, results) => {
+   if (err) {
+    console.error('Error inserting data into the database:', err);
+    return res.status(500).json({ error: 'Database error' });
+   }
 
-    res.status(200).json({ message: 'User registered successfully' });
+   res.status(200).json({ message: 'User registered successfully' });
   });
 });
 
@@ -193,7 +213,7 @@ app.get('/user_projects', authenticateToken, (req, res) => {
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
-    SELECT id, organization, project_name, project_description, session_duration, carbon_emit FROM user_history WHERE user_id = ?
+    SELECT id, organization, project_name, project_description, session_duration, carbon_emit, stage FROM user_history WHERE user_id = ?
   `;
 
   connection.query(query, [userId], (err, results) => {
@@ -210,15 +230,15 @@ app.get('/user_projects', authenticateToken, (req, res) => {
 app.put('/update_project/:id', authenticateToken, (req, res) => {
   const projectId = req.params.id; // Get project ID from request parameters
   const userId = req.user.id; // Get user ID from the authenticated token
-  const { projectName, projectDescription } = req.body; // Get project data from the request body
+  const { projectName, projectDescription, projectStage } = req.body; // Get project data from the request body
 
   const query = `
     UPDATE user_history 
-    SET project_name = ?, project_description = ? 
+    SET project_name = ?, project_description = ?, stage = ? 
     WHERE id = ? AND user_id = ?
   `;
 
-  connection.query(query, [projectName, projectDescription, projectId, userId], (err, results) => {
+  connection.query(query, [projectName, projectDescription, projectStage, projectId, userId], (err, results) => {
     if (err) {
       console.error('Error updating project in the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -233,28 +253,33 @@ app.put('/update_project/:id', authenticateToken, (req, res) => {
 });
 
 app.post('/user_Update', authenticateToken, (req, res) => {
-  const { projectName, projectDescription, sessionDuration, carbonEmissions } = req.body;
+  const { projectName, projectDescription, sessionDuration, carbonEmissions, projectStage } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
     UPDATE user_history 
-    SET session_duration = ?, carbon_emit = ?
+    SET session_duration = ?, carbon_emit = ?, stage = ?
     WHERE user_id = ? AND project_name = ?
   `;
 
-  connection.query(query, [sessionDuration, carbonEmissions, userId, projectName], (err, results) => {
-    if (err) {
-      console.error('Error updating session data in the database:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
+  connection.query(
+    query,
+    [sessionDuration, carbonEmissions, projectStage, userId, projectName],
+    (err, results) => {
+      if (err) {
+        console.error('Error updating session data in the database:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
 
-    if (results.affectedRows === 0) {
-      return res.status(404).json({ error: 'No matching project found to update' });
-    }
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'No matching project found to update' });
+      }
 
-    res.status(200).json({ message: 'Session updated successfully' });
-  });
+      res.status(200).json({ message: 'Session updated successfully' });
+    }
+  );
 });
+
 
 // Endpoint to delete a project
 app.delete('/delete_project/:id', authenticateToken, (req, res) => {
@@ -741,6 +766,30 @@ app.get('/checkDeviceType', authenticateToken, (req, res) => {
     }
   });
 });
+
+// Endpoint to check the stage type (project)
+app.post('/checkStageType', authenticateToken, (req, res) => {
+  const { projectName, projectDescription } = req.body;
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `SELECT stage FROM user_history WHERE project_name = ? AND project_description = ? AND user_id = ?`;
+
+  connection.query(query, [projectName, projectDescription, userId], (err, results) => {
+    if (err) {
+      console.error('Error querying stage type from database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      const stageType = results[0].stage;
+      res.status(200).json({ stageType }); // Return the stage type (project)
+    } else {
+      res.status(404).json({ error: 'Project not found' });
+    }
+  });
+});
+
+
 
 
 app.get('/ram-options', (req, res) => {

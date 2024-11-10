@@ -143,7 +143,7 @@ export function HELPComponent() {
                 <Text className={styles.infoText}><strong>CPU Average Watt Usage:</strong> {user?.specifications.CPU_avg_watt_usage ?? 'N/A'} W</Text>
                 <Text className={styles.infoText}><strong>Motherboard:</strong> {user?.specifications.motherboard || 'N/A'}</Text>
                 <Text className={styles.infoText}><strong>RAM:</strong> {user?.specifications.RAM || 'N/A'}</Text>
-                <Text className={styles.infoText}><strong>PSU:</strong> {user?.specifications.PSU || 'N/A'}</Text>
+                <Text className={styles.infoText}><strong>PSU/Charger Watts:</strong> {user?.specifications.PSU || 'N/A'}</Text>
               </Stack>
             )}
           </Card>
