@@ -78,6 +78,8 @@ export function StatisticsComponent() {
               <Text className={classes.projectDescription}>Description: {project.project_description}</Text>
               <Text className={classes.historyDetails}>Session Duration: {project.session_duration} seconds</Text>
               <Text className={classes.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2</Text>
+              <Text className={classes.historyDetails}>Stage: {project.stage}</Text>
+              <Text className={classes.historyDetails}>Status: {project.status}</Text>
             </Card>
           ))}
 
