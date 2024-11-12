@@ -6,6 +6,7 @@ const multer = require('multer');
 const mysql = require('mysql2');
 require('dotenv').config();
 
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key'; // Use environment variable for secret key
@@ -32,6 +33,24 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+   cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+   cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage });
+
+  // Ensure the uploads directory exists
+  const fs = require('fs');
+  const uploadsDir = path.join(__dirname, 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+  }
+
 app.post('/check-email', (req, res) => {
   const { email } = req.body;
 
@@ -53,21 +72,22 @@ app.post('/check-email', (req, res) => {
 });
 
 // Endpoint to insert user data into the MySQL database
-app.post('/register', (req, res) => {
+app.post('/register', upload.single('profilePicture'), (req, res) => {
   const { name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu } = req.body;
+  const profilePicture = req.file ? req.file.filename : null;
 
   const query = `
-    INSERT INTO users (name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+   INSERT INTO users (name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu, profile_image)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu], (err, results) => {
-    if (err) {
-      console.error('Error inserting data into the database:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
+  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu, profilePicture], (err, results) => {
+   if (err) {
+    console.error('Error inserting data into the database:', err);
+    return res.status(500).json({ error: 'Database error' });
+   }
 
-    res.status(200).json({ message: 'User registered successfully' });
+   res.status(200).json({ message: 'User registered successfully' });
   });
 });
 
@@ -157,7 +177,7 @@ app.get('/user', authenticateToken, (req, res) => {
 });
 
 app.post('/user_history', authenticateToken, (req, res) => {
-  const { organization, projectName, projectDescription, sessionDuration, carbonEmit } = req.body;
+  const { organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   // Log the data being inserted
@@ -167,15 +187,16 @@ app.post('/user_history', authenticateToken, (req, res) => {
     projectName,
     projectDescription,
     sessionDuration,
-    carbonEmit
+    carbonEmit,
+    projectStage // Log the new field
   });
 
   const query = `
-    INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit, stage)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [userId, organization, projectName, projectDescription, sessionDuration, carbonEmit], (err, results) => {
+  connection.query(query, [userId, organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage], (err, results) => {
     if (err) {
       console.error('Error inserting session data into the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -186,12 +207,13 @@ app.post('/user_history', authenticateToken, (req, res) => {
 });
 
 
+
 // Endpoint to fetch user's projects
 app.get('/user_projects', authenticateToken, (req, res) => {
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
-    SELECT id, organization, project_name, project_description, session_duration, carbon_emit FROM user_history WHERE user_id = ?
+    SELECT id, organization, project_name, project_description, session_duration, carbon_emit, stage FROM user_history WHERE user_id = ?
   `;
 
   connection.query(query, [userId], (err, results) => {
@@ -208,15 +230,15 @@ app.get('/user_projects', authenticateToken, (req, res) => {
 app.put('/update_project/:id', authenticateToken, (req, res) => {
   const projectId = req.params.id; // Get project ID from request parameters
   const userId = req.user.id; // Get user ID from the authenticated token
-  const { projectName, projectDescription } = req.body; // Get project data from the request body
+  const { projectName, projectDescription, projectStage } = req.body; // Get project data from the request body
 
   const query = `
     UPDATE user_history 
-    SET project_name = ?, project_description = ? 
+    SET project_name = ?, project_description = ?, stage = ? 
     WHERE id = ? AND user_id = ?
   `;
 
-  connection.query(query, [projectName, projectDescription, projectId, userId], (err, results) => {
+  connection.query(query, [projectName, projectDescription, projectStage, projectId, userId], (err, results) => {
     if (err) {
       console.error('Error updating project in the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -231,28 +253,33 @@ app.put('/update_project/:id', authenticateToken, (req, res) => {
 });
 
 app.post('/user_Update', authenticateToken, (req, res) => {
-  const { projectName, projectDescription, sessionDuration, carbonEmissions } = req.body;
+  const { projectName, projectDescription, sessionDuration, carbonEmissions, projectStage } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
     UPDATE user_history 
-    SET session_duration = ?, carbon_emit = ?
+    SET session_duration = ?, carbon_emit = ?, stage = ?
     WHERE user_id = ? AND project_name = ?
   `;
 
-  connection.query(query, [sessionDuration, carbonEmissions, userId, projectName], (err, results) => {
-    if (err) {
-      console.error('Error updating session data in the database:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
+  connection.query(
+    query,
+    [sessionDuration, carbonEmissions, projectStage, userId, projectName],
+    (err, results) => {
+      if (err) {
+        console.error('Error updating session data in the database:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
 
-    if (results.affectedRows === 0) {
-      return res.status(404).json({ error: 'No matching project found to update' });
-    }
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ error: 'No matching project found to update' });
+      }
 
-    res.status(200).json({ message: 'Session updated successfully' });
-  });
+      res.status(200).json({ message: 'Session updated successfully' });
+    }
+  );
 });
+
 
 // Endpoint to delete a project
 app.delete('/delete_project/:id', authenticateToken, (req, res) => {
@@ -313,8 +340,105 @@ app.post('/find_project', authenticateToken, (req, res) => {
   });
 });
 
-// Endpoint to calculate carbon emissions
+// Endpoint to calculate carbon emissions for pc personal computer
 app.post('/calculate_emissions', authenticateToken, async (req, res) => {
+  const { sessionDuration } = req.body; // Get session duration from the request body
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  try {
+      // Fetch user's CPU, GPU, RAM, and PSU details
+      const userQuery = `SELECT cpu, gpu, ram, psu FROM users WHERE id = ?`;
+      connection.query(userQuery, [userId], async (err, userResults) => {
+          if (err) {
+              console.error('Error fetching user details:', err);
+              return res.status(500).json({ error: 'Database error' });
+          }
+
+          if (userResults.length === 0) {
+              return res.status(404).json({ error: 'User not found' });
+          }
+
+          const { cpu, gpu, ram, psu } = userResults[0];
+
+          // Fetch CPU, GPU, and RAM wattage
+          const cpuResponse = await fetch(`http://localhost:5000/cpu_usage?model=${cpu}`);
+          const gpuResponse = await fetch(`http://localhost:5000/gpu_usage?model=${gpu}`);
+          const ramResponse = await fetch(`http://localhost:5000/ram_usage?model=${ram}`);
+
+          if (cpuResponse.ok && gpuResponse.ok && ramResponse.ok) {
+              const cpuData = await cpuResponse.json();
+              const gpuData = await gpuResponse.json();
+              const ramData = await ramResponse.json();
+
+              const cpuWattUsage = cpuData.avg_watt_usage;
+              const gpuWattUsage = gpuData.avg_watt_usage;
+              const ramWattUsage = ramData.avg_watt_usage;
+
+              // Add PSU wattage
+              const psuWattUsage = psu; // Assuming 'psu' in the database stores the wattage directly
+
+              // Calculate total power consumption (in kWh)
+              const totalWattUsage = cpuWattUsage + gpuWattUsage + ramWattUsage + psuWattUsage;
+              const totalEnergyUsed = (totalWattUsage * sessionDuration) / 3600; // kWh
+
+              // Define carbon intensity (kg CO2/kWh)
+              const CARBON_INTENSITY = 0.475; // Example value, adjust based on your region
+
+              // Calculate carbon emissions
+              const carbonEmissions = totalEnergyUsed * CARBON_INTENSITY; // in kg CO2e
+
+              res.status(200).json({ carbonEmissions });
+          } else {
+              return res.status(500).json({ error: 'Error fetching wattage data' });
+          }
+      });
+  } catch (error) {
+      console.error('Error calculating carbon emissions:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// Check CPU watt usage for pc personal computer
+app.get('/cpu_usage', (req, res) => {
+  const { model } = req.query;
+  const query = 'SELECT avg_watt_usage FROM cpus WHERE model = ?';
+  
+  connection.query(query, [model], (err, results) => {
+    if (err) {
+      console.error('Error querying CPU database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (results.length > 0) {
+      res.status(200).json({ avg_watt_usage: results[0].avg_watt_usage });
+    } else {
+      res.status(404).json({ error: 'CPU not found' });
+    }
+  });
+});
+
+// Check GPU watt usage for pc personal computer
+app.get('/gpu_usage', (req, res) => {
+  const { model } = req.query;
+  const query = 'SELECT avg_watt_usage FROM gpus WHERE model = ?';
+  
+  connection.query(query, [model], (err, results) => {
+    if (err) {
+      console.error('Error querying GPU database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (results.length > 0) {
+      res.status(200).json({ avg_watt_usage: results[0].avg_watt_usage });
+    } else {
+      res.status(404).json({ error: 'GPU not found' });
+    }
+  });
+});
+
+// Endpoint to calculate carbon emissions for mobile or laptop
+app.post('/calculate_emissionsM', authenticateToken, async (req, res) => {
   const { sessionDuration } = req.body; // Get session duration from the request body
   const userId = req.user.id; // Get user ID from the authenticated token
 
@@ -334,8 +458,8 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
           const { cpu, gpu, ram} = userResults[0];
 
           // Fetch CPU and GPU wattage
-          const cpuResponse = await fetch(`http://localhost:5000/cpu_usage?model=${cpu}`);
-          const gpuResponse = await fetch(`http://localhost:5000/gpu_usage?model=${gpu}`);
+          const cpuResponse = await fetch(`http://localhost:5000/cpum_usage?model=${cpu}`);
+          const gpuResponse = await fetch(`http://localhost:5000/gpum_usage?model=${gpu}`);
           const ramResponse = await fetch(`http://localhost:5000/ram_usage?model=${ram}`);
 
           if (cpuResponse.ok && gpuResponse.ok) {
@@ -343,8 +467,8 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
               const gpuData = await gpuResponse.json();
               const ramData = await ramResponse.json();
 
-              const cpuWattUsage = cpuData.avg_watt_usage;
-              const gpuWattUsage = gpuData.avg_watt_usage;
+              const cpuWattUsage = cpuData.watts;
+              const gpuWattUsage = gpuData.watts;
               const ramWattUsage = ramData.avg_watt_usage;
 
               // Calculate total power consumption (in kWh)
@@ -368,11 +492,10 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
   }
 });
 
-
-// Check CPU watt usage
-app.get('/cpu_usage', (req, res) => {
+// Check CPU watt usage for mobile or laptop
+app.get('/cpum_usage', (req, res) => {
   const { model } = req.query;
-  const query = 'SELECT avg_watt_usage FROM cpus WHERE model = ?';
+  const query = 'SELECT watts FROM cpusm WHERE model = ?';
   
   connection.query(query, [model], (err, results) => {
     if (err) {
@@ -381,17 +504,17 @@ app.get('/cpu_usage', (req, res) => {
     }
     
     if (results.length > 0) {
-      res.status(200).json({ avg_watt_usage: results[0].avg_watt_usage });
+      res.status(200).json({ watts: results[0].watts });
     } else {
-      res.status(404).json({ error: 'CPU not found' });
+      res.status(404).json({ error: 'CPUm not found' });
     }
   });
 });
 
-// Check GPU watt usage
-app.get('/gpu_usage', (req, res) => {
+// Check GPU watt usage for mobile or laptop
+app.get('/gpum_usage', (req, res) => {
   const { model } = req.query;
-  const query = 'SELECT avg_watt_usage FROM gpus WHERE model = ?';
+  const query = 'SELECT watts FROM gpusm WHERE model = ?';
   
   connection.query(query, [model], (err, results) => {
     if (err) {
@@ -400,14 +523,14 @@ app.get('/gpu_usage', (req, res) => {
     }
     
     if (results.length > 0) {
-      res.status(200).json({ avg_watt_usage: results[0].avg_watt_usage });
+      res.status(200).json({ watts: results[0].watts });
     } else {
-      res.status(404).json({ error: 'GPU not found' });
+      res.status(404).json({ error: 'GPUm not found' });
     }
   });
 });
 
-// Check ram watt usage
+// Check ram watt usage for mobile or laptop
 app.get('/ram_usage', (req, res) => {
   const { model } = req.query;
   const query = 'SELECT avg_watt_usage FROM ram WHERE ddr_generation = ?';
@@ -462,6 +585,227 @@ app.get('/gpu-options', (req, res) => {
     }));
 
     res.status(200).json({ gpuOptions });
+  });
+});
+
+app.get('/cpu-options-mobile', (req, res) => {
+  const query = 'SELECT generation, model FROM cpusm';
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching CPUm options:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Return an array of objects with optionString and model
+    const cpuOptions = results.map(row => ({
+      label: `${row.generation} ${row.model}`, // Display string
+      value: row.model // Unique model value
+    }));
+
+    res.status(200).json({ cpuOptions }); // Now matches frontend expectation
+  });
+});
+
+app.get('/gpu-options-mobile', (req, res) => {
+  const query = 'SELECT manufacturer, model FROM gpusm';
+
+  connection.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching GPUm options:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    // Return an array of objects with optionString and model
+    const gpuOptions = results.map(row => ({
+      label: `${row.manufacturer} ${row.model}`, // Display string
+      value: row.model // Unique model value
+    }));
+
+    res.status(200).json({ gpuOptions }); // Now matches frontend expectation
+  });
+});
+
+// Endpoint to fetch full user details including organization and device specifications for personal computer
+app.get('/displayuser', authenticateToken, (req, res) => {
+  const { email } = req.user;
+
+  const userQuery = `
+    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu, profile_image
+    FROM users 
+    WHERE email = ?
+  `;
+
+  connection.query(userQuery, [email], (err, userResults) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (userResults.length > 0) {
+      const user = userResults[0];
+      const { cpu, gpu, ram, motherboard, psu } = user;
+
+      // Queries for avg_watt_usage for both CPU and GPU
+      const cpuQuery = `SELECT manufacturer, series, model, avg_watt_usage FROM cpus WHERE model = ?`;
+      const gpuQuery = `SELECT manufacturer, series, model, avg_watt_usage FROM gpus WHERE model = ?`;
+
+      connection.query(cpuQuery, [cpu], (err, cpuResults) => {
+        if (err) {
+          console.error('Error querying CPU database:', err);
+          return res.status(500).json({ error: 'CPU database error' });
+        }
+
+        connection.query(gpuQuery, [gpu], (err, gpuResults) => {
+          if (err) {
+            console.error('Error querying GPU database:', err);
+            return res.status(500).json({ error: 'GPU database error' });
+          }
+
+          // Create the specifications object
+          const specifications = {
+            CPU: cpuResults.length > 0 
+              ? `${cpuResults[0].manufacturer} ${cpuResults[0].series} ${cpuResults[0].model}`
+              : cpu,
+            GPU: gpuResults.length > 0 
+              ? `${gpuResults[0].manufacturer} ${gpuResults[0].series} ${gpuResults[0].model}`
+              : gpu,
+            CPU_avg_watt_usage: cpuResults[0]?.avg_watt_usage || null,
+            GPU_avg_watt_usage: gpuResults[0]?.avg_watt_usage || null,
+            RAM: ram,
+            motherboard: motherboard,
+            PSU: psu
+          };
+
+          res.status(200).json({ user: { ...user, specifications } });
+        });
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  });
+});
+
+// Endpoint to fetch full user details including organization and device specifications for mobile or laptop
+app.get('/displayuserM', authenticateToken, (req, res) => {
+  const { email } = req.user;
+
+  const userQuery = `
+    SELECT name, email, organization, cpu, gpu, ram, motherboard, psu, profile_image
+    FROM users 
+    WHERE email = ?
+  `;
+
+  connection.query(userQuery, [email], (err, userResults) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (userResults.length > 0) {
+      const user = userResults[0];
+      const { cpu, gpu, ram, motherboard, psu } = user;
+
+      // Queries for avg_watt_usage for both CPU and GPU
+      const cpuQuery = `SELECT generation, model, watts FROM cpusm WHERE model = ?`;
+      const gpuQuery = `SELECT manufacturer, model, watts FROM gpusm WHERE model = ?`;
+
+      connection.query(cpuQuery, [cpu], (err, cpuResults) => {
+        if (err) {
+          console.error('Error querying CPU database:', err);
+          return res.status(500).json({ error: 'CPU database error' });
+        }
+
+        connection.query(gpuQuery, [gpu], (err, gpuResults) => {
+          if (err) {
+            console.error('Error querying GPU database:', err);
+            return res.status(500).json({ error: 'GPU database error' });
+          }
+
+          // Create the specifications object
+          const specifications = {
+            CPU: cpuResults.length > 0 
+              ? `${cpuResults[0].generation} ${cpuResults[0].model}`
+              : cpu,
+            GPU: gpuResults.length > 0 
+              ? `${gpuResults[0].manufacturer} ${gpuResults[0].model}`
+              : gpu,
+            CPU_avg_watt_usage: cpuResults[0]?.watts || null,
+            GPU_avg_watt_usage: gpuResults[0]?.watts || null,
+            RAM: ram,
+            motherboard: motherboard,
+            PSU: psu
+          };
+
+          res.status(200).json({ user: { ...user, specifications } });
+        });
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  });
+});
+
+// Endpoint to check device type (Laptop or Personal Computer)
+app.get('/checkDeviceType', authenticateToken, (req, res) => {
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `SELECT device FROM users WHERE id = ?`;
+
+  connection.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error querying device type from database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      const deviceType = results[0].device;
+      res.status(200).json({ deviceType }); // Return the device type (Laptop or Personal Computer)
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  });
+});
+
+app.get('/organization_projects', authenticateToken, (req, res) => {
+  const { organization } = req.query;
+
+  const query = `
+    SELECT uh.id, uh.project_name, uh.project_description, uh.session_duration, uh.carbon_emit, u.name AS owner
+    FROM user_history uh
+    JOIN users u ON uh.user_id = u.id
+    WHERE uh.organization = ?
+  `;
+
+  connection.query(query, [organization], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ projects: results });
+  });
+});
+
+// Endpoint to check the stage type (project)
+app.post('/checkStageType', authenticateToken, (req, res) => {
+  const { projectName, projectDescription } = req.body;
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `SELECT stage FROM user_history WHERE project_name = ? AND project_description = ? AND user_id = ?`;
+
+  connection.query(query, [projectName, projectDescription, userId], (err, results) => {
+    if (err) {
+      console.error('Error querying stage type from database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      const stageType = results[0].stage;
+      res.status(200).json({ stageType }); // Return the stage type (project)
+    } else {
+      res.status(404).json({ error: 'Project not found' });
+    }
   });
 });
 

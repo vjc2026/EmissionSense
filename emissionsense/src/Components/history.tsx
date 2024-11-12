@@ -375,10 +375,10 @@ export function HistoryComponent() {
           </Text>
           
           <Group mt="md" align="center" style={{ marginTop: 15 }}>
-            <Button onClick={startSession} disabled={isTimerRunning} style={{ backgroundColor: '#006400', color: '#fff' }}>
+            <Button onClick={startSession} disabled={isTimerRunning} style={{ backgroundColor: '#006400', color: '#fff' }} variant="filled" color="teal" radius="xl">
               Start Session
             </Button>
-            <Button onClick={endSession} disabled={!isTimerRunning} color="red">
+            <Button onClick={endSession} disabled={!isTimerRunning} color="red" variant="filled" radius="xl">
               End Session
             </Button>
           </Group>    
@@ -402,11 +402,18 @@ export function HistoryComponent() {
                 <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2</Text>
                 <Text className={styles.projectStage}>Project Stage: {project.stage}</Text>
                 <Group className={styles.buttonGroup}>
-                  <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }}>
+                  <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }} variant="filled" color="teal" radius="lg">
                   Edit
                   </Button>
-                  <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)}>
+                  <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)} variant="filled" radius="lg">
                   Delete
+                  </Button>
+                  <Button variant="filled" radius="lg" size="xs" color="#006400" onClick={() => {
+                    setProjectName(project.project_name);
+                    setProjectDescription(project.project_description);
+                    setProjectStage(project.stage);
+                  }}>
+                  Select
                   </Button>
                 </Group>
                 </Card>

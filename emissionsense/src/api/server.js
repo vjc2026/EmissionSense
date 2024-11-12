@@ -809,9 +809,6 @@ app.post('/checkStageType', authenticateToken, (req, res) => {
   });
 });
 
-
-
-
 app.get('/ram-options', (req, res) => {
   const query = 'SELECT ddr_generation FROM ram';
 
