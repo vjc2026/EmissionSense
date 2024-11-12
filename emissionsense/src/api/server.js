@@ -177,7 +177,7 @@ app.get('/user', authenticateToken, (req, res) => {
 });
 
 app.post('/user_history', authenticateToken, (req, res) => {
-  const { organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage } = req.body;
+  const { organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage, status } = req.body;
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   // Log the data being inserted
@@ -188,15 +188,16 @@ app.post('/user_history', authenticateToken, (req, res) => {
     projectDescription,
     sessionDuration,
     carbonEmit,
-    projectStage // Log the new field
+    projectStage, // Log the new field
+    status
   });
 
   const query = `
-    INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit, stage)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit, stage, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [userId, organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage], (err, results) => {
+  connection.query(query, [userId, organization, projectName, projectDescription, sessionDuration, carbonEmit, projectStage, status], (err, results) => {
     if (err) {
       console.error('Error inserting session data into the database:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -213,7 +214,9 @@ app.get('/user_projects', authenticateToken, (req, res) => {
   const userId = req.user.id; // Get the user ID from the authenticated token
 
   const query = `
-    SELECT id, organization, project_name, project_description, session_duration, carbon_emit, stage FROM user_history WHERE user_id = ?
+    SELECT id, organization, project_name, project_description, session_duration, carbon_emit, stage, status 
+    FROM user_history 
+    WHERE user_id = ? AND status <> 'Complete'
   `;
 
   connection.query(query, [userId], (err, results) => {
@@ -259,7 +262,7 @@ app.post('/user_Update', authenticateToken, (req, res) => {
   const query = `
     UPDATE user_history 
     SET session_duration = ?, carbon_emit = ?, stage = ?
-    WHERE user_id = ? AND project_name = ?
+    WHERE user_id = ? AND project_name = ? AND status <> 'Complete' 
   `;
 
   connection.query(
@@ -315,9 +318,9 @@ app.post('/find_project', authenticateToken, (req, res) => {
   const userId = req.user.id; // Get user ID from the authenticated token
 
   const query = `
-    SELECT session_duration, id
+    SELECT session_duration, id, status
     FROM user_history
-    WHERE project_name = ? AND project_description = ? AND user_id = ?
+    WHERE project_name = ? AND project_description = ? AND user_id = ? AND status <> 'Complete' 
   `;
 
   connection.query(query, [projectName, projectDescription, userId], (err, results) => {
@@ -331,11 +334,41 @@ app.post('/find_project', authenticateToken, (req, res) => {
       const project = results[0];
       res.status(200).json({
         session_duration: project.session_duration,
-        project_id: project.id
+        project_id: project.id,
+        project_status: project.status
       });
     } else {
       // No matching project found
       res.status(200).json(null);
+    }
+  });
+});
+
+// Endpoint to find a project by name only
+app.post('/check_existing_projectname', authenticateToken, (req, res) => {
+  const { projectName } = req.body; // Only check for project name
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `
+    SELECT id
+    FROM user_history
+    WHERE project_name = ? AND user_id = ?
+  `;
+
+  connection.query(query, [projectName, userId], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length > 0) {
+      // Project with the same name found, return exists:true
+      console.log('Project with the same name exists');
+      return res.status(200).json({ exists: true });
+    } else {
+      // No matching project found
+      console.log('No project found with the same name');
+      return res.status(200).json({ exists: false });
     }
   });
 });
@@ -767,11 +800,49 @@ app.get('/checkDeviceType', authenticateToken, (req, res) => {
   });
 });
 
+app.post('/complete_project/:id', authenticateToken, (req, res) => {
+  const projectId = req.params.id; // Get project ID from request parameters
+  const userId = req.user.id; // Get user ID from the authenticated token
+  const { nextStage } = req.body; // Get the next stage from the request body
+
+  // Step 1: Update the current project to mark it as complete
+  const completeQuery = `
+    UPDATE user_history
+    SET status = 'Complete'
+    WHERE id = ? AND user_id = ?;
+  `;
+
+  connection.query(completeQuery, [projectId, userId], (err, results) => {
+    if (err) {
+      console.error('Error completing project:', err);
+      return res.status(500).json({ error: 'Database error while completing project' });
+    }
+
+    // Step 2: Insert a new project entry with the next stage
+    const insertNewStageQuery = `
+      INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit, stage, status, created_at)
+      SELECT user_id, organization, project_name, project_description, 0, 0, ?, 'In-Progress', NOW()
+      FROM user_history
+      WHERE id = ? AND user_id = ?;
+    `;
+
+    connection.query(insertNewStageQuery, [nextStage, projectId, userId], (err, results) => {
+      if (err) {
+        console.error('Error creating new project stage:', err);
+        return res.status(500).json({ error: 'Database error while creating new project stage' });
+      }
+      res.status(200).json({ message: 'Project stage completed and new stage created successfully' });
+    });
+  });
+});
+
+
+
 app.get('/organization_projects', authenticateToken, (req, res) => {
   const { organization } = req.query;
 
   const query = `
-    SELECT uh.id, uh.project_name, uh.project_description, uh.session_duration, uh.carbon_emit, u.name AS owner
+    SELECT uh.id, uh.project_name, uh.project_description, uh.session_duration, uh.carbon_emit, uh.status, uh.stage, u.name AS owner
     FROM user_history uh
     JOIN users u ON uh.user_id = u.id
     WHERE uh.organization = ?
@@ -808,6 +879,9 @@ app.post('/checkStageType', authenticateToken, (req, res) => {
     }
   });
 });
+
+
+
 
 app.get('/ram-options', (req, res) => {
   const query = 'SELECT ddr_generation FROM ram';

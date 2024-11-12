@@ -24,12 +24,14 @@ export function HistoryComponent() {
   const [sessionDuration, setSessionDuration] = useState<number>(0);
   const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [carbonEmit, setcarbonEmit] = useState<number>(0);
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const [projectStage, setProjectStage] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editableProject, setEditableProject] = useState<any | null>(null);
 
   const formatDuration = (duration: number) => {
@@ -84,7 +86,8 @@ export function HistoryComponent() {
 
       if (response.ok) {
         const data = await response.json();
-        setProjects(data.projects); 
+        setProjects(data.projects);
+        setcarbonEmit(data.carbon_emit);
       } else {
         const result = await response.json();
         setError(result.error || 'Failed to fetch user projects.');
@@ -97,7 +100,11 @@ export function HistoryComponent() {
 
   const startSession = async () => {
     if (isTimerRunning) return;
-    
+    // Check for empty inputs
+    if (!projectName || !projectDescription) {
+      setError('Please Select a Project before starting the calculator.');
+      return;
+    }
     const token = localStorage.getItem('token');
     console.log("Starting session with:", projectName, projectDescription);
  
@@ -116,8 +123,9 @@ export function HistoryComponent() {
        }
  
        const existingProject = await response.json();
+       setError(' ');
        console.log("Existing project found:", existingProject);
- 
+
        if (existingProject) {
           setSessionDuration(existingProject.session_duration || 0);
        } else {
@@ -132,31 +140,6 @@ export function HistoryComponent() {
     } catch (err) {
        console.error('Error in startSession:', err);
        setError('An error occurred while starting the session.');
-    }
-  };
- 
-  const checkProjectStage = async () => {
-    const token = localStorage.getItem('token');
-    try {
-      const response = await fetch('http://localhost:5000/checkStageType', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ projectName, projectDescription }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to check project stage: ${response.statusText}`);
-      }
-
-      const { stageType } = await response.json();
-      return stageType;
-    } catch (err) {
-      console.error('Error checking project stage:', err);
-      setError('An error occurred while checking the project stage.');
-      return null;
     }
   };
 
@@ -208,9 +191,6 @@ export function HistoryComponent() {
       const { carbonEmissions } = await emissionsResponse.json();
       console.log(`Calculated Carbon Emissions: ${carbonEmissions} kg CO2`);
 
-      const existingStage = await checkProjectStage();
-
-      if (existingStage === projectStage) {
         const updateResponse = await fetch('http://localhost:5000/user_Update', {
           method: 'POST',
           headers: {
@@ -234,37 +214,12 @@ export function HistoryComponent() {
           const result = await updateResponse.json();
           setError(result.error || 'Failed to record session.');
         }
-      } else {
-        const historyResponse = await fetch('http://localhost:5000/user_history', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ ...historyData, carbonEmit: carbonEmissions }),
-        });
-
-        if (historyResponse.ok) {
-          setProjectName('');
-          setProjectDescription('');
-          setProjectStage('');
-          setSessionDuration(0);
-          fetchUserProjects(user?.email!);
-
-          setSessionHistory(prev => [
-            ...prev,
-            { projectName: historyData.projectName, projectDescription: historyData.projectDescription, sessionDuration: historyData.sessionDuration, carbonEmissions, organization: historyData.organization, projectStage: historyData.projectStage },
-          ]);
-        } else {
-          const result = await historyResponse.json();
-          setError(result.error || 'Failed to record session.');
-        }
-      }
     } catch (err) {
       console.error('Error in endSession:', err);
       setError('An error occurred while recording the session.');
     }
-  };
+};
+
 
   const handleSaveChanges = async () => {
     if (!editableProject) return;
@@ -327,6 +282,118 @@ export function HistoryComponent() {
     }
   };
 
+  const createProject = async () => {
+    if (!projectName || !projectDescription || !projectStage) {
+      setError('All fields are required.');
+      return; // Exit the function if any required field is missing
+    }
+    const token = localStorage.getItem('token');
+    const projectData = {
+      projectName,
+      projectDescription,
+      organization,
+      projectStage,
+      sessionDuration: 0,
+      carbonEmit: 0,
+      status: "In-Progress",
+    };
+    try {
+      // Check if a project with the same name exists
+      const checkResponse = await fetch('http://localhost:5000/check_existing_projectname', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ projectName }),
+      });
+  
+      const existingProject = await checkResponse.json();
+  
+      // If project with the same name exists, show error and close modal
+      if (existingProject.exists) {
+        setError('A project with this name already exists.');
+        return; // Exit the function early
+      }
+  
+      // No existing project, create the new one
+      const response = await fetch('http://localhost:5000/user_history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(projectData),
+      });
+      
+      if (response.ok) {
+        setProjectName('');
+        setProjectDescription('');
+        setProjectStage('');
+        setSessionDuration(0);
+        fetchUserProjects(user?.email!); // Refresh the project list
+        console.log('Project successfully created in user history.');
+        setIsCreateModalOpen(false); // Close the modal on success
+        setError(' ');
+      } else {
+        const result = await response.json();
+        setError(result.error || 'Failed to create project in user history.');
+      }
+    } catch (err) {
+      console.error('Error in createProject:', err);
+      setError('An error occurred while creating the project.');
+    }
+  };
+
+  const stages = [
+    "Design: Creating the software architecture",
+    "Development: Writing the actual code",
+    "Testing: Ensuring the software works as expected"
+  ];
+  
+  const handleCompleteStage = async (projectId: number) => {
+    if (!projectName || !projectDescription || !projectStage) {
+      setError('Please select a project before completing a stage.');
+      return;
+    }
+    const token = localStorage.getItem('token');
+    const currentStageIndex = stages.indexOf(projectStage);
+    const nextStage = currentStageIndex >= 0 && currentStageIndex < stages.length - 1 
+      ? stages[currentStageIndex + 1] 
+      : null;
+  
+    if (!nextStage) {
+      setError('This project is already at the final stage.');
+      return;
+    }
+  
+    try {
+      const response = await fetch(`http://localhost:5000/complete_project/${projectId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nextStage }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to complete project: ${response.statusText}`);
+      }
+  
+      const result = await response.json();
+      setError('');
+      setProjectName('');
+      setProjectDescription('');
+      setProjectStage('');
+      fetchUserProjects(user?.email!); 
+      console.log("Project stage updated successfully:", result);
+    } catch (err) {
+      console.error('Error in completing project stage:', err);
+      setError('An error occurred while completing the project stage.');
+    }
+  };
+  
   return (
     <Container className={styles.container}>
       <Title order={1} className={styles.title}>
@@ -334,7 +401,7 @@ export function HistoryComponent() {
       </Title>
 
       {error && (
-        <Text className={styles.errorText}>
+        <Text className={styles.errorText} color='red'>
           {error}
         </Text>
       )}
@@ -345,16 +412,20 @@ export function HistoryComponent() {
         <Stack mt="md">
           <TextInput
             placeholder="Project Name"
+            label="Project Title"
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             style={{ width: '100%' }}
+            readOnly
           />
           
           <TextInput
             placeholder="Project Description"
+            label="Project Description"
             value={projectDescription}
             onChange={(e) => setProjectDescription(e.target.value)}
             style={{ width: '100%' }}
+            readOnly
           />
 
           <Select
@@ -368,6 +439,7 @@ export function HistoryComponent() {
             value={projectStage}
             onChange={setProjectStage}
             className={styles.projectStageDropdown}
+            readOnly
           />
 
           <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
@@ -380,6 +452,9 @@ export function HistoryComponent() {
             </Button>
             <Button onClick={endSession} disabled={!isTimerRunning} color="red" variant="filled" radius="xl">
               End Session
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)} style={{ backgroundColor: '#0000FF', color: '#fff'}}>
+            Create Project
             </Button>
           </Group>    
           
@@ -402,18 +477,11 @@ export function HistoryComponent() {
                 <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2</Text>
                 <Text className={styles.projectStage}>Project Stage: {project.stage}</Text>
                 <Group className={styles.buttonGroup}>
-                  <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }} variant="filled" color="teal" radius="lg">
+                  <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }}>
                   Edit
                   </Button>
                   <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)} variant="filled" radius="lg">
                   Delete
-                  </Button>
-                  <Button variant="filled" radius="lg" size="xs" color="#006400" onClick={() => {
-                    setProjectName(project.project_name);
-                    setProjectDescription(project.project_description);
-                    setProjectStage(project.stage);
-                  }}>
-                  Select
                   </Button>
                 </Group>
                 </Card>
@@ -422,6 +490,44 @@ export function HistoryComponent() {
         </Stack>
       )}
 
+        {/* Create Project Modal */}
+        <Modal opened={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create New Project">
+        <TextInput
+          placeholder="Project Name"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          style={{ width: '100%' }}
+          required
+        />
+        <TextInput
+          placeholder="Project Description"
+          value={projectDescription}
+          onChange={(e) => setProjectDescription(e.target.value)}
+          style={{ width: '100%' }}
+          required
+        />
+        <Select
+          label="Project Stage"
+          placeholder="Select a stage"
+          data={[
+            { value: 'Design: Creating the software architecture', label: 'Design: Creating the software architecture' },
+            { value: 'Development: Writing the actual code', label: 'Development: Writing the actual code' },
+            { value: 'Testing: Ensuring the software works as expected', label: 'Testing: Ensuring the software works as expected' },
+          ]}
+          value={projectStage}
+          onChange={setProjectStage}
+          required
+        />
+        {error && (
+          <Text color="red" style={{ marginTop: '10px', fontSize: '14px' }}>
+            {error}
+          </Text>
+        )}
+        <Group align="right" mt="md">
+          <Button onClick={createProject} style={{ backgroundColor: '#006400', color: '#fff' }}>Create</Button>
+        </Group>
+      </Modal>
+      
       <Modal opened={isModalOpen} onClose={() => setIsModalOpen(false)} title="Edit Project">
         <TextInput 
           label="Project Title"
