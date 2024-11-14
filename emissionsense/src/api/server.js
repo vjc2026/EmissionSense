@@ -229,6 +229,46 @@ app.get('/user_projects', authenticateToken, (req, res) => {
   });
 });
 
+app.get('/all_user_projects', authenticateToken, (req, res) => {
+  const userId = req.user.id; // Get the user ID from the authenticated token
+
+  const query = `
+    SELECT id, organization, project_name, project_description, session_duration, carbon_emit, stage, status, created_at 
+    FROM user_history 
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+  `;
+
+  connection.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ projects: results }); // Send back all user's projects
+  });
+});
+
+// Endpoint to fetch user's projects
+app.get('/user_project_display', authenticateToken, (req, res) => {
+  const userId = req.user.id; // Get the user ID from the authenticated token
+
+  const query = `
+    SELECT id, organization, project_name, project_description, session_duration, carbon_emit, stage, status 
+    FROM user_history 
+    WHERE user_id = ? AND status
+  `;
+
+  connection.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ projects: results }); // Send back user's projects
+  });
+});
+
 // Endpoint to update a project
 app.put('/update_project/:id', authenticateToken, (req, res) => {
   const projectId = req.params.id; // Get project ID from request parameters
@@ -800,6 +840,7 @@ app.get('/checkDeviceType', authenticateToken, (req, res) => {
   });
 });
 
+// Endpoint to complete user's project stage
 app.post('/complete_project/:id', authenticateToken, (req, res) => {
   const projectId = req.params.id; // Get project ID from request parameters
   const userId = req.user.id; // Get user ID from the authenticated token
@@ -857,31 +898,6 @@ app.get('/organization_projects', authenticateToken, (req, res) => {
     res.status(200).json({ projects: results });
   });
 });
-
-// Endpoint to check the stage type (project)
-app.post('/checkStageType', authenticateToken, (req, res) => {
-  const { projectName, projectDescription } = req.body;
-  const userId = req.user.id; // Get user ID from the authenticated token
-
-  const query = `SELECT stage FROM user_history WHERE project_name = ? AND project_description = ? AND user_id = ?`;
-
-  connection.query(query, [projectName, projectDescription, userId], (err, results) => {
-    if (err) {
-      console.error('Error querying stage type from database:', err);
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (results.length > 0) {
-      const stageType = results[0].stage;
-      res.status(200).json({ stageType }); // Return the stage type (project)
-    } else {
-      res.status(404).json({ error: 'Project not found' });
-    }
-  });
-});
-
-
-
 
 app.get('/ram-options', (req, res) => {
   const query = 'SELECT ddr_generation FROM ram';

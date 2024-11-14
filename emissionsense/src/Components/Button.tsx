@@ -7,7 +7,9 @@ import {
   Image, 
   Grid, 
   Loader, 
-  Stack 
+  Stack,
+  Modal,
+  Button
 } from '@mantine/core';
 import styles from './Button.module.css';
 
@@ -31,6 +33,8 @@ export function HELPComponent() {
   const [projects, setProjects] = useState<any[]>([]);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [modalOpened, setModalOpened] = useState(false);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -75,31 +79,38 @@ export function HELPComponent() {
       } finally {
         setLoading(false);
       }
-    };
+    }
+  
 
-    const fetchUserProjects = async (email: string) => {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await fetch(`http://localhost:5000/user_projects?email=${email}`, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
+    // Update the fetchUserProjects function and add project cards display
+const fetchUserProjects = async (email: string) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch('http://localhost:5000/all_user_projects', {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
 
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data.projects); // Set the projects
-        } else {
-          const result = await response.json();
-          setError(result.error || 'Failed to fetch user projects.');
-        }
-      } catch (err) {
-        console.error('Error:', err);
-        setError('An error occurred while fetching user projects.');
-      }
-    };
+    if (response.ok) {
+      const data = await response.json();
+      setProjects(data.projects);
+    } else {
+      const result = await response.json();
+      setError(result.error || 'Failed to fetch user projects.');
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    setError('An error occurred while fetching user projects.');
+  }
+};
 
     fetchUserDetails();
   }, []);
+
+  const handleProjectClick = (project: any) => {
+    setSelectedProject(project);
+    setModalOpened(true);
+  };
 
   return (
     <Container size="lg" className={styles.container}>
@@ -149,7 +160,6 @@ export function HELPComponent() {
           </Card>
         </Grid.Col>
       </Grid>
-
       <Title order={3} className={styles.sectionTitle}>Your Projects</Title>
       <Grid gutter="md">
         {projects.length === 0 ? (
@@ -157,14 +167,65 @@ export function HELPComponent() {
         ) : (
           projects.map(project => (
             <Grid.Col span={4} key={project.id}>
-              <Card shadow="sm" padding="lg" className={styles.projectCard}>
-                <Text fw={500}>{project.project_name}</Text>
-                <Text size="sm">{project.project_description}</Text>
+              <Card 
+                shadow="sm" 
+                padding="lg" 
+                className={styles.projectCard}
+                onClick={() => handleProjectClick(project)}
+                style={{ cursor: 'pointer' }}
+              >
+                <Text fw={700} size="lg" mb="xs">Project Title: {project.project_name}</Text>
+                <Stack align="xs">
+                  <Text size="sm" fw="10" style={{ lineHeight: 1.5 }}><strong>Stage:</strong> {project.stage.length > 35 ? `${project.stage.substring(0, 35)}.....` : project.stage}</Text>
+                  <Text size="sm"><strong>Status:</strong> {project.status} </Text>
+                </Stack>
               </Card>
             </Grid.Col>
           ))
         )}
       </Grid>
+
+      <Modal
+  opened={modalOpened}
+  onClose={() => setModalOpened(false)}
+  title="Project Details"
+  size="lg"
+>
+  {selectedProject && (
+    <Stack>
+      <Text size="xl" fw={700}>{selectedProject.project_name}</Text>
+      <Text><strong>Description:</strong> {selectedProject.project_description}</Text>
+      <Text><strong>Status:</strong> {selectedProject.status}</Text>
+      <Text><strong>Stage:</strong> {selectedProject.stage}</Text>
+      <Text><strong>Carbon Emissions:</strong> {selectedProject.carbon_emit} kg CO2e</Text>
+      <Text><strong>Session Duration:</strong> {selectedProject.session_duration} seconds</Text>
+      <Button 
+        color="red"
+        onClick={async () => {
+          const token = localStorage.getItem('token');
+          try {
+            const response = await fetch(`http://localhost:5000/delete_project/${selectedProject.id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+              setModalOpened(false);
+              // Remove project from state
+              setProjects(projects.filter(p => p.id !== selectedProject.id));
+            } else {
+              setError('Failed to delete project');
+            }
+          } catch (err) {
+            console.error('Error deleting project:', err);
+            setError('An error occurred while deleting the project');
+          }
+        }}
+      >
+        Delete Project
+      </Button>
+    </Stack>
+  )}
+</Modal>
     </Container>
   );
 }

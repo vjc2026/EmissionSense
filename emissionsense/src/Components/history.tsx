@@ -356,31 +356,55 @@ export function HistoryComponent() {
       setError('Please select a project before completing a stage.');
       return;
     }
+
+    // Check if the project is already in the final stage
     const token = localStorage.getItem('token');
     const currentStageIndex = stages.indexOf(projectStage);
     const nextStage = currentStageIndex >= 0 && currentStageIndex < stages.length - 1 
       ? stages[currentStageIndex + 1] 
       : null;
-  
-    if (!nextStage) {
-      setError('This project is already at the final stage.');
-      return;
-    }
-  
+
     try {
+      if (!nextStage) {
+      // Final stage completion - don't create a new stage
       const response = await fetch(`http://localhost:5000/complete_project/${projectId}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ nextStage }),
+        body: JSON.stringify({ 
+        status: 'Complete'
+        // Remove nextStage from request body
+        }),
       });
-  
+
       if (!response.ok) {
         throw new Error(`Failed to complete project: ${response.statusText}`);
       }
-  
+
+      setError('Project is now finished!');
+      setProjectName('');
+      setProjectDescription('');
+      setProjectStage('');
+      fetchUserProjects(user?.email!);
+      return;
+      }
+
+      // Normal stage progression
+      const response = await fetch(`http://localhost:5000/complete_project/${projectId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ nextStage }),
+      });
+
+      if (!response.ok) {
+      throw new Error(`Failed to complete project: ${response.statusText}`);
+      }
+
       const result = await response.json();
       setError('');
       setProjectName('');
@@ -392,7 +416,7 @@ export function HistoryComponent() {
       console.error('Error in completing project stage:', err);
       setError('An error occurred while completing the project stage.');
     }
-  };
+    };
   
   return (
     <Container className={styles.container}>
@@ -447,14 +471,14 @@ export function HistoryComponent() {
           </Text>
           
           <Group mt="md" align="center" style={{ marginTop: 15 }}>
-            <Button onClick={startSession} disabled={isTimerRunning} style={{ backgroundColor: '#006400', color: '#fff' }} variant="filled" color="teal" radius="xl">
+          <Button onClick={() => setIsCreateModalOpen(true)} style={{ backgroundColor: '#006400', color: '#fff'}}>
+            Create Project
+            </Button>
+            <Button onClick={startSession} disabled={isTimerRunning} style={{ backgroundColor: '#006400', color: '#fff' }}>
               Start Session
             </Button>
-            <Button onClick={endSession} disabled={!isTimerRunning} color="red" variant="filled" radius="xl">
+            <Button onClick={endSession} disabled={!isTimerRunning} color="red">
               End Session
-            </Button>
-            <Button onClick={() => setIsCreateModalOpen(true)} style={{ backgroundColor: '#0000FF', color: '#fff'}}>
-            Create Project
             </Button>
           </Group>    
           
@@ -470,21 +494,34 @@ export function HistoryComponent() {
               .reduce((acc, session) => acc + session.carbonEmissions, 0);
 
             return (
-                <Card key={project.id} className={styles.projectCard}>
-                <Text className={styles.projectName}>Project Name: {project.project_name}</Text>
-                <Text className={styles.projectDescription}>Description: {project.project_description}</Text>
-                <Text className={styles.historyDetails}>Session Duration: {formatDuration(project.session_duration)}</Text>
-                <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2</Text>
-                <Text className={styles.projectStage}>Project Stage: {project.stage}</Text>
-                <Group className={styles.buttonGroup}>
-                  <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }}>
-                  Edit
-                  </Button>
-                  <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)} variant="filled" radius="lg">
-                  Delete
-                  </Button>
-                </Group>
-                </Card>
+              <Card key={project.id} className={styles.projectCard}>
+              <Text className={styles.projectName}>Project Name: {project.project_name}</Text>
+              <Text className={styles.projectDescription}>Description: {project.project_description}</Text>
+              <Text className={styles.historyDetails}>Session Duration: {formatDuration(project.session_duration)}</Text>
+              <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2</Text>
+              <Text className={styles.projectStage}>Project Stage: {project.stage}</Text>
+              <Group className={styles.buttonGroup}>
+              <Button size="xs" onClick={() => {
+              setProjectName(project.project_name);
+              setProjectDescription(project.project_description);
+              setProjectStage(project.stage);
+              }}>
+              Select
+              </Button>
+              <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }}>
+              Edit
+              </Button>
+              <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)}>
+              Delete
+              </Button>
+              <Button 
+              size="xs" 
+              color="blue" 
+              onClick={() => handleCompleteStage(project.id)}>
+              Complete Stage
+              </Button>
+              </Group>
+              </Card>
             );
           })}
         </Stack>
@@ -493,6 +530,7 @@ export function HistoryComponent() {
         {/* Create Project Modal */}
         <Modal opened={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create New Project">
         <TextInput
+          label="Project Name"
           placeholder="Project Name"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
@@ -500,6 +538,7 @@ export function HistoryComponent() {
           required
         />
         <TextInput
+          label="Project Description"
           placeholder="Project Description"
           value={projectDescription}
           onChange={(e) => setProjectDescription(e.target.value)}

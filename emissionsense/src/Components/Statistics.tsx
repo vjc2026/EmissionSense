@@ -1,8 +1,6 @@
-import { Progress, Box, Text, Group, Paper, SimpleGrid, rem } from '@mantine/core';
-import { IconArrowUpRight, IconDeviceAnalytics } from '@tabler/icons-react';
-import classes from './Statistics.module.css';
+import { Progress, Box, Text, Group, Card, Container, Loader, Stack, Title, Grid, Badge } from '@mantine/core';
 import { useState, useEffect } from 'react';
-import { Card, Container, Loader, Stack, Title } from '@mantine/core';
+import classes from './Statistics.module.css';
 
 export function StatisticsComponent() {
   const [projects, setProjects] = useState<any[]>([]);
@@ -63,7 +61,7 @@ export function StatisticsComponent() {
 
   return (
     <Container>
-      <Title order={1}>Organization: {organization}</Title>
+      <Title order={1} mt="md">Organization: {organization}</Title>
 
       {error && <Text color="red">{error}</Text>}
 
@@ -71,19 +69,37 @@ export function StatisticsComponent() {
         <Loader size="lg" style={{ display: 'block', margin: '0 auto' }} />
       ) : (
         <Stack mt="md">
-          {projects.map((project) => (
-            <Card key={project.id} className={classes.projectCard}>
-              <Text className={classes.projectOwner}>Owner: {project.owner}</Text>
-              <Text className={classes.projectName}>Project Name: {project.project_name}</Text>
-              <Text className={classes.projectDescription}>Description: {project.project_description}</Text>
-              <Text className={classes.historyDetails}>Session Duration: {project.session_duration} seconds</Text>
-              <Text className={classes.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2</Text>
-              <Text className={classes.historyDetails}>Stage: {project.stage}</Text>
-              <Text className={classes.historyDetails}>Status: {project.status}</Text>
-            </Card>
-          ))}
+            <Grid>
+            {projects.map((project) => (
+              <Grid.Col span={12} key={project.id}>
+              <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
+                <Group align="apart" style={{ marginBottom: 5 }}>
+                <Text fw={500}>Project Title: {project.project_name}</Text> 
+                <Badge color="green" variant="light">
+                  Project {project.status}
+                </Badge>
+                </Group>
+                <Text size="sm" fw="10" style={{ lineHeight: 1.5 }}>
+                  Project Description: {project.project_description.length > 100 ? `${project.project_description.substring(0, 100)}.........` : project.project_description}
+                </Text>
+                <Text size="sm" color="dimmed">
+                Owner: {project.owner}
+                </Text>
+                <Text size="sm" color="dimmed">
+                Session Duration: {project.session_duration} seconds
+                </Text>
+                <Text size="sm" color="dimmed">
+                Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2
+                </Text>
+                <Text size="sm" color="dimmed">
+                Stage: {project.stage}
+                </Text>
+              </Card>
+              </Grid.Col>
+            ))}
+            </Grid>
 
-          <Text className={classes.totalEmissions}>
+          <Text size="lg" fw={500} mt="md">
             Total Carbon Emissions: {calculateTotalEmissions()} kg CO2
           </Text>
         </Stack>
