@@ -1,6 +1,5 @@
-import { Progress, Box, Text, Group, Card, Container, Loader, Stack, Title, Grid, Badge } from '@mantine/core';
+import { Text, Group, Card, Container, Loader, Stack, Title, Grid, Badge } from '@mantine/core';
 import { useState, useEffect } from 'react';
-import classes from './Statistics.module.css';
 
 export function StatisticsComponent() {
   const [projects, setProjects] = useState<any[]>([]);
@@ -89,7 +88,7 @@ export function StatisticsComponent() {
                 Session Duration: {project.session_duration} seconds
                 </Text>
                 <Text size="sm" color="dimmed">
-                Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2
+                Carbon Emissions: {project.carbon_emit.toFixed(2)} kg CO2
                 </Text>
                 <Text size="sm" color="dimmed">
                 Stage: {project.stage}

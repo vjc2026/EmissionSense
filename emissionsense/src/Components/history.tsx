@@ -498,7 +498,7 @@ export function HistoryComponent() {
               <Text className={styles.projectName}>Project Name: {project.project_name}</Text>
               <Text className={styles.projectDescription}>Description: {project.project_description}</Text>
               <Text className={styles.historyDetails}>Session Duration: {formatDuration(project.session_duration)}</Text>
-              <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(4)} kg CO2</Text>
+              <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(2)} kg CO2</Text>
               <Text className={styles.projectStage}>Project Stage: {project.stage}</Text>
               <Group className={styles.buttonGroup}>
               <Button size="xs" onClick={() => {

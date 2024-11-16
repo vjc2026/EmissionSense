@@ -1,6 +1,6 @@
 import React from 'react';
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
-import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, rem, Box, Paper } from '@mantine/core';
+import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, Box, Paper } from '@mantine/core';
 import LoginPage from './LoginAndRegister/Login';
 import ButtonComponent from './Components/Button';
 import TextComponent from './Components/Text';
@@ -9,7 +9,7 @@ import Proceed from './LoginAndRegister/Proceed';
 import History from './Components/history';
 import TEST from './Components/TEST';
 import UserSpecs from './Components/UserSpecs';
-import classes from './Components/TEST.module.css'
+import classes from './Components/TEST.module.css';
 import { IconBoxPadding, IconCaretDownFilled, IconDashboard, IconUser, IconChartBar, IconHistory } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import StatisticsComponent from './Components/Statistics';
@@ -28,6 +28,32 @@ const MainContent: React.FC = () => {
   const navigate = useNavigate();
   const [opened, setOpened] = React.useState(false);
   const [currentComponent, setCurrentComponent] = React.useState<string>('component1');
+  const [userData, setUserData] = React.useState({ name: '', organization: '' });
+
+  React.useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserData({
+            name: data.user.name,
+            organization: data.user.organization,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -39,36 +65,35 @@ const MainContent: React.FC = () => {
       header={{ height: 70 }}
       navbar={{ width: 300, breakpoint: 'sm', collapsed: { mobile: !opened } }}
       padding="md"
-      styles={{
-        main: {
-          background: '#f8f9fa'
-        }
-      }}
     >
-      <AppShell.Header style={{ 
-        background: dlsuGreen,
-        borderBottom: 'none',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
+      <AppShell.Header
+        style={{
+          background: dlsuGreen,
+          borderBottom: 'none',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        }}
+      >
         <Flex justify="space-between" align="center" style={{ padding: '10px 20px', height: '100%' }}>
-          <Burger 
-            opened={opened} 
-            onClick={() => setOpened(!opened)} 
-            hiddenFrom="sm" 
+          <Burger
+            opened={opened}
+            onClick={() => setOpened(!opened)}
+            hiddenFrom="sm"
             size="sm"
             color="white"
           />
-          <Text size="xl" fw={700} c="white">Emission Sense</Text>
-          <Button 
-            variant="white" 
+          <Text size="xl" fw={700} c="white">
+            Emission Sense
+          </Text>
+          <Button
+            variant="white"
             onClick={handleLogout}
             styles={{
               root: {
                 '&:hover': {
                   backgroundColor: '#e7f5ff',
                   color: dlsuGreen,
-                }
-              }
+                },
+              },
             }}
           >
             LogOut
@@ -76,27 +101,33 @@ const MainContent: React.FC = () => {
         </Flex>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md" style={{ 
-        background: 'white',
-        borderRight: 'none',
-        boxShadow: '2px 0 4px rgba(0,0,0,0.1)'
-      }}>
-        <Paper 
-          shadow="xs" 
-          p="md" 
+      <AppShell.Navbar
+        p="md"
+        style={{
+          background: 'white',
+          borderRight: 'none',
+          boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+        }}
+      >
+        <Paper
+          shadow="xs"
+          p="md"
           mb="md"
           style={{
             borderRadius: '10px',
-            background: '#f8f9fa'
+            background: '#f8f9fa',
           }}
         >
-          <UnstyledButton className={classes.user} style={{ 
-            width: '100%', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
-            gap: '10px'
-          }}>
+          <UnstyledButton
+            className={classes.user}
+            style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+          >
             <Avatar
               src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
               radius="xl"
@@ -105,10 +136,11 @@ const MainContent: React.FC = () => {
             />
             <Box>
               <Text size="md" fw={700} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                Aaron Jay C. Bautista
-                <IconCaretDownFilled style={{ width: 16, height: 16 }} stroke={1.5} />
+                {userData.name}
               </Text>
-              <Text c="dimmed" size="sm">DLSU Organization</Text>
+              <Text c="dimmed" size="sm" ta="center">
+                {userData.organization}
+              </Text>
             </Box>
           </UnstyledButton>
         </Paper>
@@ -126,7 +158,7 @@ const MainContent: React.FC = () => {
                   backgroundColor: dlsuLightGreen,
                 },
                 color: currentComponent === 'component1' ? 'white' : dlsuGreen,
-              }
+              },
             }}
           >
             Dashboard
@@ -143,7 +175,7 @@ const MainContent: React.FC = () => {
                   backgroundColor: dlsuLightGreen,
                 },
                 color: currentComponent === 'component2' ? 'white' : dlsuGreen,
-              }
+              },
             }}
           >
             Profile Page
@@ -160,7 +192,7 @@ const MainContent: React.FC = () => {
                   backgroundColor: dlsuLightGreen,
                 },
                 color: currentComponent === 'component3' ? 'white' : dlsuGreen,
-              }
+              },
             }}
           >
             Statistics
@@ -177,7 +209,7 @@ const MainContent: React.FC = () => {
                   backgroundColor: dlsuLightGreen,
                 },
                 color: currentComponent === 'component4' ? 'white' : dlsuGreen,
-              }
+              },
             }}
           >
             Projects Session Tracker
@@ -186,7 +218,7 @@ const MainContent: React.FC = () => {
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Paper shadow="xs" p="xl" radius="md" style={{ height: '100%' }}>
+        <Paper>
           {currentComponent === 'component1' && <TextComponent />}
           {currentComponent === 'component2' && <ButtonComponent />}
           {currentComponent === 'component3' && <StatisticsComponent />}

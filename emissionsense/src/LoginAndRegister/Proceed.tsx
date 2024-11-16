@@ -190,6 +190,14 @@ const DeviceForm: React.FC = () => {
                 mb="lg"
                 className={classes.inputField}
               />
+                  <Anchor c="dimmed" size="sm" className={classes.control}>
+                <Center inline>
+                  <IconArrowLeft style={{ width: rem(12), color: 'white', height: rem(12) }} stroke={1.5} />
+                <Box onClick={() => setDevice(null)} ml={5} style={{ color: 'white' }}>
+                  Change Device
+                </Box>
+                </Center>
+              </Anchor>
               <Button fullWidth mt="sm" onClick={handleSubmit} className={classes.button} color="green">
                 Submit
               </Button>

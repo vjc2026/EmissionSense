@@ -18,7 +18,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import classes from './Register.module.css';
 import { IconArrowLeft } from '@tabler/icons-react';
-import { GoogleButton } from './GoogleButton';
 
 const RegisterPage: React.FC = () => {
   const location = useLocation();
@@ -178,8 +177,7 @@ const RegisterPage: React.FC = () => {
               </div>
             </Tooltip>
           </Center>
-
-          <TextInput
+            <TextInput
             label="Name"
             className={classes.text}
             placeholder="Enter your name"
@@ -187,8 +185,8 @@ const RegisterPage: React.FC = () => {
             onChange={(e) => setName(e.currentTarget.value)}
             required
             style={{ color: 'white' }}
-          />
-          <TextInput
+            />
+            <TextInput
             label="Your email"
             className={classes.text}
             placeholder="Enter your email"
@@ -196,25 +194,25 @@ const RegisterPage: React.FC = () => {
             onChange={(e) => setEmail(e.currentTarget.value)}
             required
             style={{ color: 'white' }}
-            error={emailExists ? 'This email is already in use.' : undefined} // Show error if email exists
-          />
-          <PasswordInput
+            error={emailExists ? 'This email is already in use.' : !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email) ? 'Invalid email format' : undefined} // Show error if email exists or invalid format
+            />
+            <PasswordInput
             label="Password"
             className={classes.text}
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.currentTarget.value)}
             style={{ color: 'white' }}
-          />
-          <PasswordInput
+            />
+            <PasswordInput
             label="Confirm Password"
             className={classes.text}
             placeholder="Repeat your password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.currentTarget.value)}
             style={{ color: 'white' }}
-          />
-          <TextInput
+            />
+            <TextInput
             label="Organization"
             className={classes.text}
             placeholder="Enter your organization"
@@ -222,7 +220,7 @@ const RegisterPage: React.FC = () => {
             onChange={(e) => setOrganization(e.currentTarget.value)}
             required
             style={{ color: 'white' }}
-          />
+            />
 
           <Group justify="space-between" className={classes.controls}>
             <Anchor c="dimmed" size="sm" className={classes.control}>
@@ -236,9 +234,6 @@ const RegisterPage: React.FC = () => {
             <Button onClick={handleProceed} color="green" fullWidth mt="xl" className={classes.control}>
               Proceed
             </Button>
-            <GoogleButton fullWidth mt="xl">
-              Sign in with Google
-            </GoogleButton>
           </Group>
         </div>
       </Container>
