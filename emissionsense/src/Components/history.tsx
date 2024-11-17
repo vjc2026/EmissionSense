@@ -35,9 +35,10 @@ export function HistoryComponent() {
   const [editableProject, setEditableProject] = useState<any | null>(null);
 
   const formatDuration = (duration: number) => {
-    const minutes = Math.floor(duration / 60);
+    const hours = Math.floor(duration / 3600);
+    const minutes = Math.floor((duration % 3600) / 60);
     const seconds = duration % 60;
-    return `${minutes}m ${seconds}s`;
+    return `${hours}h ${minutes}m ${seconds}s`;
   };
 
   useEffect(() => {
@@ -357,25 +358,31 @@ export function HistoryComponent() {
       return;
     }
 
-    // Check if the project is already in the final stage
     const token = localStorage.getItem('token');
-    const currentStageIndex = stages.indexOf(projectStage);
-    const nextStage = currentStageIndex >= 0 && currentStageIndex < stages.length - 1 
-      ? stages[currentStageIndex + 1] 
-      : null;
+
+    // Define project stages
+    const projectStages = [
+      'Design: Creating the software architecture',
+      'Development: Writing the actual code', 
+      'Testing: Ensuring the software works as expected'
+    ];
+
+    // Get current stage index
+    const currentStageIndex = projectStages.indexOf(projectStage);
+
+    // Check if current stage is the last stage
+    const isLastStage = currentStageIndex === projectStages.length - 1;
 
     try {
-      if (!nextStage) {
-      // Final stage completion - don't create a new stage
       const response = await fetch(`https://emissionsense-server.onrender.com/complete_project/${projectId}`, {
         method: 'POST',
         headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-        status: 'Complete'
-        // Remove nextStage from request body
+        body: JSON.stringify({
+          // Only include nextStage if not in last stage
+          ...(isLastStage ? {} : { nextStage: projectStages[currentStageIndex + 1] })
         }),
       });
 
@@ -383,40 +390,23 @@ export function HistoryComponent() {
         throw new Error(`Failed to complete project: ${response.statusText}`);
       }
 
-      setError('Project is now finished!');
+      if (isLastStage) {
+        setError('Project is now complete! All stages finished.');
+      } else {
+        setError('');
+      }
+
+      // Reset form fields and refresh projects
       setProjectName('');
       setProjectDescription('');
       setProjectStage('');
       fetchUserProjects(user?.email!);
-      return;
-      }
 
-      // Normal stage progression
-      const response = await fetch(`https://emissionsense-server.onrender.com/complete_project/${projectId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ nextStage }),
-      });
-
-      if (!response.ok) {
-      throw new Error(`Failed to complete project: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      setError('');
-      setProjectName('');
-      setProjectDescription('');
-      setProjectStage('');
-      fetchUserProjects(user?.email!); 
-      console.log("Project stage updated successfully:", result);
     } catch (err) {
       console.error('Error in completing project stage:', err);
       setError('An error occurred while completing the project stage.');
     }
-    };
+  };
   
   return (
     <Container className={styles.container}>

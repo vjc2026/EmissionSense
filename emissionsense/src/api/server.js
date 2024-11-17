@@ -842,37 +842,70 @@ app.get('/checkDeviceType', authenticateToken, (req, res) => {
 
 // Endpoint to complete user's project stage
 app.post('/complete_project/:id', authenticateToken, (req, res) => {
-  const projectId = req.params.id; // Get project ID from request parameters
-  const userId = req.user.id; // Get user ID from the authenticated token
-  const { nextStage } = req.body; // Get the next stage from the request body
+  const projectId = req.params.id;
+  const userId = req.user.id;
+  const { nextStage } = req.body;
 
-  // Step 1: Update the current project to mark it as complete
-  const completeQuery = `
-    UPDATE user_history
-    SET status = 'Complete'
-    WHERE id = ? AND user_id = ?;
+  // Define all project stages in order
+  const projectStages = [
+    'Design: Creating the software architecture',
+    'Development: Writing the actual code',
+    'Testing: Ensuring the software works as expected'
+  ];
+
+  // First get the current project's stage
+  const getCurrentStageQuery = `
+    SELECT stage FROM user_history WHERE id = ? AND user_id = ?;
   `;
 
-  connection.query(completeQuery, [projectId, userId], (err, results) => {
+  connection.query(getCurrentStageQuery, [projectId, userId], (err, results) => {
     if (err) {
-      console.error('Error completing project:', err);
-      return res.status(500).json({ error: 'Database error while completing project' });
+      console.error('Error getting current stage:', err);
+      return res.status(500).json({ error: 'Database error' });
     }
 
-    // Step 2: Insert a new project entry with the next stage
-    const insertNewStageQuery = `
-      INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit, stage, status, created_at)
-      SELECT user_id, organization, project_name, project_description, 0, 0, ?, 'In-Progress', NOW()
-      FROM user_history
+    const currentStage = results[0]?.stage;
+    const isLastStage = currentStage === projectStages[projectStages.length - 1];
+
+    // Update current project to mark it as complete
+    const completeQuery = `
+      UPDATE user_history
+      SET status = 'Complete'
       WHERE id = ? AND user_id = ?;
     `;
 
-    connection.query(insertNewStageQuery, [nextStage, projectId, userId], (err, results) => {
+    connection.query(completeQuery, [projectId, userId], (err, results) => {
       if (err) {
-        console.error('Error creating new project stage:', err);
-        return res.status(500).json({ error: 'Database error while creating new project stage' });
+        console.error('Error completing project:', err);
+        return res.status(500).json({ error: 'Database error while completing project' });
       }
-      res.status(200).json({ message: 'Project stage completed and new stage created successfully' });
+
+      // If this is the last stage, just send success response
+      if (isLastStage) {
+        return res.status(200).json({ 
+          message: 'Project completed successfully',
+          isComplete: true
+        });
+      }
+
+      // If not last stage, create next stage
+      const insertNewStageQuery = `
+        INSERT INTO user_history (user_id, organization, project_name, project_description, session_duration, carbon_emit, stage, status, created_at)
+        SELECT user_id, organization, project_name, project_description, 0, 0, ?, 'In-Progress', NOW()
+        FROM user_history
+        WHERE id = ? AND user_id = ?;
+      `;
+
+      connection.query(insertNewStageQuery, [nextStage, projectId, userId], (err, results) => {
+        if (err) {
+          console.error('Error creating new project stage:', err);
+          return res.status(500).json({ error: 'Database error while creating new project stage' });
+        }
+        res.status(200).json({ 
+          message: 'Project stage completed and new stage created successfully',
+          isComplete: false
+        });
+      });
     });
   });
 });

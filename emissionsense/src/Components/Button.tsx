@@ -127,57 +127,29 @@ export function HELPComponent() {
       >
         <Grid gutter={isMobile ? 'sm' : 'xl'} style={{ width: '100%' }}>
           {/* Profile Column */}
-            <Grid.Col span={isMobile ? 12 : 3}>
-              {!isMobile && (
-                <Card
-                  shadow="sm"
-                  padding={isMobile ? 'md' : 'xl'}
-                  style={{ backgroundColor: '#006747', color: 'white', borderRadius: '10px' }}
-                >
-                  <Stack gap="md">
-                    <div style={{ display: 'flex', justifyContent: 'flex-start', paddingLeft: '20px' }}>
-                      <Image
-                        src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
-                        alt="Profile Image"
-                        radius="xl"
-                        width={150}
-                        height={150}
-                      />
-                    </div>
-                    <Text c="white" style={{ fontWeight: 600, fontSize: '24px' }}>
-                      {user?.name || 'N/A'}
-                    </Text>
-                    <Text c="white" style={{ fontSize: '18px' }}>
-                      {user?.organization || 'N/A'}
-                    </Text>
-                  </Stack>
-                </Card>
-              )}
-              {isMobile && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '1rem',
-                  marginBottom: '1rem' 
-                }}>
-                  <Image
-                    src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
-                    alt="Profile Image"
-                    radius="xl"
-                    width={80}
-                    height={80}
-                  />
-                  <div>
-                    <Text style={{ fontWeight: 600, fontSize: '18px' }}>
-                      {user?.name || 'N/A'}
-                    </Text>
-                    <Text style={{ fontSize: '14px' }}>
-                      {user?.organization || 'N/A'}
-                    </Text>
-                  </div>
-                </div>
-              )}
-            </Grid.Col>
+          <Grid.Col span={isMobile ? 12 : 3}>
+            <Card
+              shadow="sm"
+              padding={isMobile ? 'md' : 'xl'}
+              style={{ backgroundColor: '#006747', color: 'white', borderRadius: '10px' }}
+            >
+              <Stack align="center" gap="md">
+                <Image
+                  src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
+                  alt="Profile Image"
+                  radius="xl"
+                  width={isMobile ? 100 : 150}
+                  height={isMobile ? 100 : 150}
+                />
+                <Text c="white" style={{ fontWeight: 600, fontSize: isMobile ? '18px' : '24px' }}>
+                  {user?.name || 'N/A'}
+                </Text>
+                <Text c="white" style={{ fontSize: isMobile ? '14px' : '18px' }}>
+                  {user?.organization || 'N/A'}
+                </Text>
+              </Stack>
+            </Card>
+          </Grid.Col>
   
           {/* Profile Details Column */}
           <Grid.Col span={isMobile ? 12 : 9}>
@@ -331,7 +303,7 @@ export function HELPComponent() {
                 onClick={async () => {
                   const token = localStorage.getItem('token');
                   try {
-                    const response = await fetch(`https://emissionsense-server.onrender.com/${selectedProject.id}`, {
+                    const response = await fetch(`https://emissionsense-server.onrender.com/delete_project/${selectedProject.id}`, {
                       method: 'DELETE',
                       headers: { Authorization: `Bearer ${token}` },
                     });
