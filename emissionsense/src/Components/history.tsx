@@ -51,7 +51,7 @@ export function HistoryComponent() {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/user', {
+        const response = await fetch('https://emissionsense-server.onrender.com/user', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -79,7 +79,7 @@ export function HistoryComponent() {
   const fetchUserProjects = async (email: string) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5000/user_projects?email=${email}`, {
+      const response = await fetch(`https://emissionsense-server.onrender.com/user_projects?email=${email}`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -109,7 +109,7 @@ export function HistoryComponent() {
     console.log("Starting session with:", projectName, projectDescription);
  
     try {
-       const response = await fetch(`http://localhost:5000/find_project`, {
+       const response = await fetch(`https://emissionsense-server.onrender.com/find_project`, {
           method: 'POST',
           headers: {
              'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ export function HistoryComponent() {
     };
 
     try {
-      const deviceTypeResponse = await fetch('http://localhost:5000/checkDeviceType', {
+      const deviceTypeResponse = await fetch('https://emissionsense-server.onrender.com/checkDeviceType', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -172,8 +172,8 @@ export function HistoryComponent() {
       const { deviceType } = await deviceTypeResponse.json();
 
       const emissionsEndpoint = deviceType === 'Laptop' 
-        ? 'http://localhost:5000/calculate_emissionsM'
-        : 'http://localhost:5000/calculate_emissions';
+        ? 'https://emissionsense-server.onrender.com/calculate_emissionsM'
+        : 'https://emissionsense-server.onrender.com/calculate_emissions';
 
       const emissionsResponse = await fetch(emissionsEndpoint, {
         method: 'POST',
@@ -191,7 +191,7 @@ export function HistoryComponent() {
       const { carbonEmissions } = await emissionsResponse.json();
       console.log(`Calculated Carbon Emissions: ${carbonEmissions} kg CO2`);
 
-        const updateResponse = await fetch('http://localhost:5000/user_Update', {
+        const updateResponse = await fetch('https://emissionsense-server.onrender.com/user_Update', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ export function HistoryComponent() {
     const updatedProject = { projectName, projectDescription, projectStage };
 
     try {
-      const response = await fetch(`http://localhost:5000/update_project/${editableProject.id}`, {
+      const response = await fetch(`https://emissionsense-server.onrender.com/update_project/${editableProject.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ export function HistoryComponent() {
   const handleDeleteProject = async (projectId: number) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5000/delete_project/${projectId}`, {
+      const response = await fetch(`https://emissionsense-server.onrender.com/delete_project/${projectId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -299,7 +299,7 @@ export function HistoryComponent() {
     };
     try {
       // Check if a project with the same name exists
-      const checkResponse = await fetch('http://localhost:5000/check_existing_projectname', {
+      const checkResponse = await fetch('https://emissionsense-server.onrender.com/check_existing_projectname', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -317,7 +317,7 @@ export function HistoryComponent() {
       }
   
       // No existing project, create the new one
-      const response = await fetch('http://localhost:5000/user_history', {
+      const response = await fetch('https://emissionsense-server.onrender.com/user_history', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -353,7 +353,7 @@ export function HistoryComponent() {
   
   const handleCompleteStage = async (projectId: number) => {
     if (!projectName || !projectDescription || !projectStage) {
-      setError('Please select a project before completing a stage.');
+      setError('Are you sure you want to complete this project? (Click again to confirm)');
       return;
     }
 
@@ -367,7 +367,7 @@ export function HistoryComponent() {
     try {
       if (!nextStage) {
       // Final stage completion - don't create a new stage
-      const response = await fetch(`http://localhost:5000/complete_project/${projectId}`, {
+      const response = await fetch(`https://emissionsense-server.onrender.com/complete_project/${projectId}`, {
         method: 'POST',
         headers: {
         'Content-Type': 'application/json',
@@ -392,7 +392,7 @@ export function HistoryComponent() {
       }
 
       // Normal stage progression
-      const response = await fetch(`http://localhost:5000/complete_project/${projectId}`, {
+      const response = await fetch(`https://emissionsense-server.onrender.com/complete_project/${projectId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -494,34 +494,44 @@ export function HistoryComponent() {
               .reduce((acc, session) => acc + session.carbonEmissions, 0);
 
             return (
-              <Card key={project.id} className={styles.projectCard}>
-              <Text className={styles.projectName}>Project Name: {project.project_name}</Text>
-              <Text className={styles.projectDescription}>Description: {project.project_description}</Text>
-              <Text className={styles.historyDetails}>Session Duration: {formatDuration(project.session_duration)}</Text>
-              <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(2)} kg CO2</Text>
-              <Text className={styles.projectStage}>Project Stage: {project.stage}</Text>
-              <Group className={styles.buttonGroup}>
-              <Button size="xs" onClick={() => {
+                <Card key={project.id} className={styles.projectCard}>
+                <Text className={styles.projectName}>Project Name: {project.project_name}</Text>
+                <Text className={styles.projectDescription}>Description: {project.project_description}</Text>
+                <Text className={styles.historyDetails}>Session Duration: {formatDuration(project.session_duration)}</Text>
+                <Text className={styles.historyDetails}>Carbon Emissions: {project.carbon_emit.toFixed(2)} kg CO2</Text>
+                <Text className={styles.projectStage}>Project Stage: {project.stage}</Text>
+                <Group className={styles.buttonGroup}>
+                <Button size="xs" onClick={() => {
               setProjectName(project.project_name);
               setProjectDescription(project.project_description);
               setProjectStage(project.stage);
               }}>
               Select
               </Button>
-              <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }}>
-              Edit
-              </Button>
-              <Button size="xs" color="red" onClick={() => handleDeleteProject(project.id)}>
-              Delete
-              </Button>
-              <Button 
-              size="xs" 
-              color="blue" 
-              onClick={() => handleCompleteStage(project.id)}>
-              Complete Stage
-              </Button>
-              </Group>
-              </Card>
+                <Button size="xs" onClick={() => handleEditProject(project.id)} style={{ backgroundColor: '#006400', color: '#fff' }}>
+                Edit
+                </Button>
+                <Button size="xs" color="red" onClick={() => {
+                setProjectName(project.project_name);
+                setProjectDescription(project.project_description);
+                setProjectStage(project.stage);
+                handleDeleteProject(project.id);
+                }}>
+                Delete
+                </Button>
+                <Button 
+                size="xs" 
+                color="blue" 
+                onClick={() => {
+                setProjectName(project.project_name);
+                setProjectDescription(project.project_description);
+                setProjectStage(project.stage);
+                handleCompleteStage(project.id);
+                }}>
+                Complete Stage
+                </Button>
+                </Group>
+                </Card>
             );
           })}
         </Stack>

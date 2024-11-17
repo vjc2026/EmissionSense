@@ -434,9 +434,9 @@ app.post('/calculate_emissions', authenticateToken, async (req, res) => {
           const { cpu, gpu, ram, psu } = userResults[0];
 
           // Fetch CPU, GPU, and RAM wattage
-          const cpuResponse = await fetch(`http://localhost:5000/cpu_usage?model=${cpu}`);
-          const gpuResponse = await fetch(`http://localhost:5000/gpu_usage?model=${gpu}`);
-          const ramResponse = await fetch(`http://localhost:5000/ram_usage?model=${ram}`);
+          const cpuResponse = await fetch(`https://emissionsense-server.onrender.com/cpu_usage?model=${cpu}`);
+          const gpuResponse = await fetch(`https://emissionsense-server.onrender.com/gpu_usage?model=${gpu}`);
+          const ramResponse = await fetch(`https://emissionsense-server.onrender.com/ram_usage?model=${ram}`);
 
           if (cpuResponse.ok && gpuResponse.ok && ramResponse.ok) {
               const cpuData = await cpuResponse.json();
@@ -531,9 +531,9 @@ app.post('/calculate_emissionsM', authenticateToken, async (req, res) => {
           const { cpu, gpu, ram} = userResults[0];
 
           // Fetch CPU and GPU wattage
-          const cpuResponse = await fetch(`http://localhost:5000/cpum_usage?model=${cpu}`);
-          const gpuResponse = await fetch(`http://localhost:5000/gpum_usage?model=${gpu}`);
-          const ramResponse = await fetch(`http://localhost:5000/ram_usage?model=${ram}`);
+          const cpuResponse = await fetch(`https://emissionsense-server.onrender.com/cpum_usage?model=${cpu}`);
+          const gpuResponse = await fetch(`https://emissionsense-server.onrender.com/gpum_usage?model=${gpu}`);
+          const ramResponse = await fetch(`https://emissionsense-server.onrender.com/ram_usage?model=${ram}`);
 
           if (cpuResponse.ok && gpuResponse.ok) {
               const cpuData = await cpuResponse.json();

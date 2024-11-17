@@ -1,120 +1,61 @@
-import { Text, Card, Image, Button, Group, Container, Grid } from '@mantine/core';
-
-const data = [
-  {
-    title: 'Page views',
-    stats: '456,133',
-    description: '24% more than in the same month last year, 33% more than two years ago',
-  },
-  {
-    title: 'New users',
-    stats: '2,175',
-    description: '13% less compared to last month, new user engagement up by 6%',
-  },
-  {
-    title: 'Completed orders',
-    stats: '1,994',
-    description: '1994 orders were completed this month, 97% satisfaction rate',
-  },
-];
+import { Text, Card, Container, Grid, Title, Stack, Flex } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';  // Importing Mantine's useMediaQuery hook
 
 export function TextComponent() {
-  const stats = data.map((stat, index) => (
-    <Grid.Col span={4} key={index}>
-      <Card shadow="sm" padding="lg" radius="md" withBorder style={{ backgroundColor: '#e8f5e9' }}>
-        <Text size="lg" fw={500} style={{ color: '#388e3c' }}>{stat.title}</Text>
-        <Text size="xl" fw={700} style={{ color: '#1b5e20' }}>{stat.stats}</Text>
-        <Text size="sm" c="dimmed">{stat.description}</Text>
-      </Card>
-    </Grid.Col>
-  ));
+  const isMobile = useMediaQuery('(max-width: 768px)');  // Determine if screen is mobile
 
   return (
-    <Container size="xl" py="xl">
-      <Grid gutter="xl">
-        {stats}
-        <Grid.Col span={6}>
-          <Card
-            h="100%"
-            shadow="md"
-            padding="xl"
-            radius="lg"
-            withBorder
-            style={{ backgroundColor: '#e8f5e9', borderColor: '#1b5e20' }}
-          >
-            <Card.Section>
-              <Image
-                src="https://www.ntaskmanager.com/wp-content/uploads/2020/10/project-design-in-project-management.png"
-                height={200}
-                alt="Projects"
-                style={{ objectFit: 'cover' }}
-              />
-            </Card.Section>
-
-            <Group mt="xl" mb="md">
-              <Text fw={700} size="xl" style={{ color: '#1b5e20' }}>Current Project</Text>
-            </Group>
-
-            <Text size="md" c="dimmed" style={{ lineHeight: 1.6 }}>
-              Description of the said project
+    <Flex justify="center" align="center" style={{ height: '90vh' }}>
+      <Container size="xl" py="xl">
+        <Stack gap="xl">
+          {/* About the Website Card */}
+          <Card shadow="sm" padding="lg" radius="md" withBorder style={{ backgroundColor: '#e8f5e9' }}>
+            <Title order={2} style={{ color: '#388e3c' }}>About the Website</Title>
+            <Text size={isMobile ? 'sm' : 'md'} style={{ color: '#1b5e20', marginTop: '1rem' }}>
+              EmissionSense is a platform designed to help users track and manage their carbon emissions during software development projects. Our goal is to provide insights and tools to promote sustainable practices in the tech industry.
             </Text>
-
-            <Button
-              fullWidth
-              mt="xl"
-              radius="md"
-              size="lg"
-              variant="gradient"
-              gradient={{ from: '#388e3c', to: '#1b5e20' }}
-            >
-              View all Projects
-            </Button>
           </Card>
-        </Grid.Col>
-        <Grid.Col span={6}>
-          <Card
-            h="100%"
-            shadow="md"
-            padding="xl"
-            radius="lg"
-            withBorder
-            style={{ backgroundColor: '#e8f5e9', borderColor: '#1b5e20' }}
-          >
-            <Card.Section
-              p="xl"
-              style={{
-                textAlign: 'center',
-                height: 200,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text size="60px" fw={700} style={{ color: '#1b5e20' }}>00:00:00</Text>
-            </Card.Section>
 
-            <Group mt="xl" mb="md">
-              <Text fw={700} size="xl" style={{ color: '#1b5e20' }}>Timer for Project</Text>
-            </Group>
+          {/* How to Use It & About Us Cards */}
+          <Flex justify={isMobile ? 'center' : 'space-between'} align="stretch" style={{ gap: '1rem', flexDirection: isMobile ? 'column' : 'row' }}>
+            <Card shadow="sm" padding="lg" radius="md" withBorder style={{ backgroundColor: '#e8f5e9', flex: 1 }}>
+              <Title order={2} style={{ color: '#388e3c' }}>How to Use It</Title>
+              <Text size={isMobile ? 'sm' : 'md'} style={{ color: '#1b5e20', marginTop: '1rem' }}>
+                To get started, create an account and log in. Once logged in, you can create new projects, start and stop timers to track your work sessions, and view detailed statistics about your carbon emissions. Use the provided tools to analyze your data and make informed decisions to reduce your carbon footprint.
+              </Text>
+            </Card>
 
-            <Text size="md" c="dimmed" style={{ lineHeight: 1.6 }}>
-              Click the timer when you are about to start working on a software project.
-            </Text>
+            <Card shadow="sm" padding="lg" radius="md" withBorder style={{ backgroundColor: '#e8f5e9', flex: 1 }}>
+              <Title order={2} style={{ color: '#388e3c' }}>About Us</Title>
+              <Text size={isMobile ? 'sm' : 'md'} style={{ color: '#1b5e20', marginTop: '1rem' }}>
+                EmissionSense was created by the research group DigiBytes. Our team is dedicated to promoting sustainability in the tech industry through innovative solutions and research. We believe that by providing tools and insights, we can help individuals and organizations make a positive impact on the environment.
+              </Text>
+            </Card>
+          </Flex>
 
-            <Button
-              fullWidth
-              mt="xl"
-              radius="md"
-              size="lg"
-              variant="gradient"
-              gradient={{ from: '#388e3c', to: '#1b5e20' }}
-            >
-              Start Calculator Timer
-            </Button>
-          </Card>
-        </Grid.Col>
-      </Grid>
-    </Container>
+          {/* Features and Contact Us Cards in a Grid */}
+          <Grid gutter="xl">
+            <Grid.Col span={isMobile ? 12 : 6}>
+              <Card shadow="sm" padding="lg" radius="md" withBorder style={{ backgroundColor: '#e8f5e9' }}>
+                <Title order={2} style={{ color: '#388e3c' }}>Features</Title>
+                <Text size={isMobile ? 'sm' : 'md'} style={{ color: '#1b5e20', marginTop: '1rem' }}>
+                  Our platform offers a variety of features including real-time tracking of carbon emissions, detailed analytics, project management tools, and personalized recommendations to help you reduce your carbon footprint.
+                </Text>
+              </Card>
+            </Grid.Col>
+
+            <Grid.Col span={isMobile ? 12 : 6}>
+              <Card shadow="sm" padding="lg" radius="md" withBorder style={{ backgroundColor: '#e8f5e9' }}>
+                <Title order={2} style={{ color: '#388e3c' }}>Contact Us</Title>
+                <Text size={isMobile ? 'sm' : 'md'} style={{ color: '#1b5e20', marginTop: '1rem' }}>
+                  If you have any questions or feedback, feel free to reach out to us at support@emissionsense.com. We are always here to help and would love to hear from you.
+                </Text>
+              </Card>
+            </Grid.Col>
+          </Grid>
+        </Stack>
+      </Container>
+    </Flex>
   );
 }
 

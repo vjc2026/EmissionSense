@@ -1,12 +1,16 @@
 import { Text, Group, Card, Container, Loader, Stack, Title, Grid, Badge } from '@mantine/core';
 import { useState, useEffect } from 'react';
+import { useMediaQuery } from '@mantine/hooks'; // Import useMediaQuery for responsive design
 
 export function StatisticsComponent() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [organization, setOrganization] = useState<string>('');
-  
+
+  // Use media query to check for mobile screens
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
   useEffect(() => {
     const fetchProjects = async () => {
       const token = localStorage.getItem('token');
@@ -18,7 +22,7 @@ export function StatisticsComponent() {
       }
 
       try {
-        const userResponse = await fetch('http://localhost:5000/user', {
+        const userResponse = await fetch('https://emissionsense-server.onrender.com/user', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -27,7 +31,7 @@ export function StatisticsComponent() {
           const userData = await userResponse.json();
           setOrganization(userData.user.organization);
 
-          const projectsResponse = await fetch(`http://localhost:5000/organization_projects?organization=${userData.user.organization}`, {
+          const projectsResponse = await fetch(`https://emissionsense-server.onrender.com/organization_projects?organization=${userData.user.organization}`, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
           });
@@ -60,45 +64,49 @@ export function StatisticsComponent() {
 
   return (
     <Container>
-      <Title order={1} mt="md">Organization: {organization}</Title>
+      <Title order={1} mt="md" style={{ fontSize: isMobile ? '1.5rem' : '2rem' }}>
+        Organization: {organization}
+      </Title>
 
-      {error && <Text color="red">{error}</Text>}
+      {error && <Text color="red" style={{ fontSize: isMobile ? 'sm' : 'md' }}>{error}</Text>}
 
       {loading ? (
         <Loader size="lg" style={{ display: 'block', margin: '0 auto' }} />
       ) : (
         <Stack mt="md">
-            <Grid>
+          <Grid gutter="md">
             {projects.map((project) => (
-              <Grid.Col span={12} key={project.id}>
-              <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
-                <Group align="apart" style={{ marginBottom: 5 }}>
-                <Text fw={500}>Project Title: {project.project_name}</Text> 
-                <Badge color="green" variant="light">
-                  Project {project.status}
-                </Badge>
-                </Group>
-                <Text size="sm" fw="10" style={{ lineHeight: 1.5 }}>
-                  Project Description: {project.project_description.length > 100 ? `${project.project_description.substring(0, 100)}.........` : project.project_description}
-                </Text>
-                <Text size="sm" color="dimmed">
-                Owner: {project.owner}
-                </Text>
-                <Text size="sm" color="dimmed">
-                Session Duration: {project.session_duration} seconds
-                </Text>
-                <Text size="sm" color="dimmed">
-                Carbon Emissions: {project.carbon_emit.toFixed(2)} kg CO2
-                </Text>
-                <Text size="sm" color="dimmed">
-                Stage: {project.stage}
-                </Text>
-              </Card>
+              <Grid.Col span={isMobile ? 12 : 6} key={project.id}>
+                <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%' }}>
+                    <Group align="apart" style={{ marginBottom: 5 }}>
+                    <Text fw={500} style={{ fontSize: isMobile ? 'sm' : 'md' }}>
+                      Project Title: {project.project_name}
+                    </Text>
+                    <Badge color={project.status === "In-Progress" ? "red" : "green"} variant="light">
+                      Project {project.status}
+                    </Badge>
+                    </Group>
+                  <Text size="sm" fw="10" style={{ lineHeight: 1.5, fontSize: isMobile ? 'sm' : 'md' }}>
+                    Project Description: {project.project_description.length > 100 ? `${project.project_description.substring(0, 100)}.........` : project.project_description}
+                  </Text>
+                  <Text size="sm" color="dimmed" style={{ fontSize: isMobile ? 'sm' : 'md' }}>
+                    Owner: {project.owner}
+                  </Text>
+                  <Text size="sm" color="dimmed" style={{ fontSize: isMobile ? 'sm' : 'md' }}>
+                    Session Duration: {project.session_duration} seconds
+                  </Text>
+                  <Text size="sm" color="dimmed" style={{ fontSize: isMobile ? 'sm' : 'md' }}>
+                    Carbon Emissions: {project.carbon_emit.toFixed(2)} kg CO2
+                  </Text>
+                  <Text size="sm" color="dimmed" style={{ fontSize: isMobile ? 'sm' : 'md' }}>
+                    Stage: {project.stage}
+                  </Text>
+                </Card>
               </Grid.Col>
             ))}
-            </Grid>
+          </Grid>
 
-          <Text size="lg" fw={500} mt="md">
+          <Text size="lg" fw={500} mt="md" style={{ fontSize: isMobile ? 'sm' : 'lg' }}>
             Total Carbon Emissions: {calculateTotalEmissions()} kg CO2
           </Text>
         </Stack>

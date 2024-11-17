@@ -34,7 +34,7 @@ const UserSpecs: React.FC = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const userResponse = await axios.get('http://localhost:5000/user', {
+        const userResponse = await axios.get('https://emissionsense-server.onrender.com/user', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
