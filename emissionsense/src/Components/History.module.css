@@ -80,3 +80,25 @@ button:hover {
   background-color: #006400;
   color: #fff;
 }
+
+.floatingHelpButton {
+  position: fixed;
+  bottom: 30px;
+  right: 100px;
+  z-index: 1000;
+  background-color: #1d72b8;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.floatingHelpButton:hover {
+  background-color: #155d8a;
+  cursor: pointer;
+}

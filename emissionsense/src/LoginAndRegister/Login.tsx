@@ -50,8 +50,8 @@ const LoginPage: React.FC = () => {
     navigate('/register');
   };
 
-  const testRegister = () => {
-    navigate('/TEST');
+  const handleforgotpassword = () => {
+    navigate('/forgotpass');
   };
 
   const refreshToken = async () => {
@@ -87,9 +87,6 @@ const LoginPage: React.FC = () => {
         <Container size={420} my={40}>
           <Title ta="center" className={classes.title} style={{ color: 'white' }}>
             Welcome back!
-            <Button fullWidth mt="xl" color="green" onClick={testRegister}>
-              TEST
-            </Button>
           </Title>
           <Text c="dimmed" size="sm" ta="center" mt={5}>
             Do not have an account yet?{' '}
@@ -117,7 +114,7 @@ const LoginPage: React.FC = () => {
           />
           <Group justify="space-between" mt="lg">
             <Checkbox label="Remember me" style={{ color: 'white' }} />
-            <Anchor component="button" style={{ color: 'green' }} size="sm">
+            <Anchor component="button" onClick={handleforgotpassword} style={{ color: 'green' }} size="sm">
               Forgot password?
             </Anchor>
           </Group>

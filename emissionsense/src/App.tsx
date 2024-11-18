@@ -8,6 +8,7 @@ import Register from './LoginAndRegister/Register';
 import Proceed from './LoginAndRegister/Proceed';
 import History from './Components/history';
 import TEST from './Components/TEST';
+import Forgotpass from './LoginAndRegister/ForgotPasswordPage';
 import UserSpecs from './Components/UserSpecs';
 import classes from './Components/TEST.module.css';
 import { IconBoxPadding, IconCaretDownFilled, IconDashboard, IconUser, IconChartBar, IconHistory } from '@tabler/icons-react';
@@ -236,6 +237,7 @@ const App: React.FC = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/main" element={<ProtectedRoute element={<MainContent />} />} />
       <Route path="/proceed" element={<Proceed />} />
+      <Route path="/forgotpass" element={<Forgotpass />} />
       <Route path="/test" element={<TEST />} />
       <Route path="/test1" element={<UserSpecs />} />
     </Routes>

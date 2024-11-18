@@ -14,7 +14,7 @@ import {
   Avatar,
   Tooltip,
 } from '@mantine/core';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import classes from './Register.module.css';
 import { IconArrowLeft } from '@tabler/icons-react';
@@ -26,38 +26,76 @@ const RegisterPage: React.FC = () => {
   const [emailExists, setEmailExists] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [organization, setOrganization] = useState(location.state?.organization || '');
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(location.state?.profilePicturePreview || null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(
+    location.state?.profilePicturePreview || null
+  );
   const navigate = useNavigate();
 
   const handleLogin = () => {
     navigate('/');
   };
 
-  const checkEmailExists = async (email: string) => {
+  const checkEmailExists = async (email: string): Promise<boolean> => {
     try {
-      const response = await fetch('/check-email', {
+      const response = await fetch('http://localhost:5000/check-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email }),
       });
+      if (!response.ok) {
+        throw new Error('Failed to check email existence');
+      }
       const data = await response.json();
-      setEmailExists(data.exists);
+      return data.exists;
     } catch (error) {
       console.error('Error checking email:', error);
+      return false;
     }
   };
 
-  useEffect(() => {
-    if (email) {
-      checkEmailExists(email);
-    } else {
-      setEmailExists(false); // Reset if the email input is empty
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+    if (!emailRegex.test(email)) {
+      return 'Invalid email format';
     }
-  }, [email]);
+    return null;
+  };
+
+  const handleEmailChange = async (value: string) => {
+    setEmail(value);
+    const error = validateEmail(value);
+    if (error) {
+      setEmailError(error);
+      setEmailExists(false);
+      return;
+    }
+
+    setEmailError(null);
+    const exists = await checkEmailExists(value);
+    setEmailExists(exists);
+  };
+
+  const validatePassword = (password: string) => {
+    const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setPasswordError(
+        'Password must be at least 8 characters long and include a number, an uppercase letter, and a symbol.'
+      );
+    } else {
+      setPasswordError(null);
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    validatePassword(value);
+  };
 
   const compressImage = (file: File, quality: number): Promise<File> => {
     return new Promise((resolve) => {
@@ -70,8 +108,8 @@ const RegisterPage: React.FC = () => {
           const ctx = canvas.getContext('2d');
 
           if (ctx) {
-            const maxWidth = 800; 
-            const maxHeight = 800; 
+            const maxWidth = 800;
+            const maxHeight = 800;
             let width = img.width;
             let height = img.height;
 
@@ -119,28 +157,6 @@ const RegisterPage: React.FC = () => {
     }
   };
 
-  const handleProceed = () => {
-    if (!name || !email || !organization || (password && password !== confirmPassword)) {
-      alert('Please fill all fields and ensure the passwords match.');
-      return;
-    }
-    if (emailExists) {
-      alert('This email is already in use. Please choose a different email.');
-      return;
-    }
-
-    navigate('/proceed', {
-      state: {
-        name,
-        email,
-        password,
-        organization,
-        profilePicture,
-        profilePicturePreview,
-      },
-    });
-  };
-
   return (
     <div className={classes.container}>
       <Container size={460} my={30} className={classes.formContainer}>
@@ -157,7 +173,10 @@ const RegisterPage: React.FC = () => {
           </Text>
           <Center>
             <Tooltip label="Input Profile Picture" withArrow position="top">
-              <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => document.getElementById('file-input')?.click()}>
+              <div
+                style={{ position: 'relative', cursor: 'pointer' }}
+                onClick={() => document.getElementById('file-input')?.click()}
+              >
                 <Avatar
                   size={120}
                   radius={120}
@@ -177,7 +196,7 @@ const RegisterPage: React.FC = () => {
               </div>
             </Tooltip>
           </Center>
-            <TextInput
+          <TextInput
             label="Name"
             className={classes.text}
             placeholder="Enter your name"
@@ -185,34 +204,35 @@ const RegisterPage: React.FC = () => {
             onChange={(e) => setName(e.currentTarget.value)}
             required
             style={{ color: 'white' }}
-            />
-            <TextInput
+          />
+          <TextInput
             label="Your email"
             className={classes.text}
             placeholder="Enter your email"
             value={email}
-            onChange={(e) => setEmail(e.currentTarget.value)}
+            onChange={(e) => handleEmailChange(e.currentTarget.value)}
             required
             style={{ color: 'white' }}
-            error={emailExists ? 'This email is already in use.' : !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email) ? 'Invalid email format' : undefined} // Show error if email exists or invalid format
-            />
-            <PasswordInput
+            error={emailError || (emailExists ? 'This email is already exist.' : undefined)}
+          />
+          <PasswordInput
             label="Password"
             className={classes.text}
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.currentTarget.value)}
+            onChange={(e) => handlePasswordChange(e.currentTarget.value)}
+            error={passwordError}
             style={{ color: 'white' }}
-            />
-            <PasswordInput
+          />
+          <PasswordInput
             label="Confirm Password"
             className={classes.text}
             placeholder="Repeat your password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.currentTarget.value)}
             style={{ color: 'white' }}
-            />
-            <TextInput
+          />
+          <TextInput
             label="Organization"
             className={classes.text}
             placeholder="Enter your organization"
@@ -220,7 +240,7 @@ const RegisterPage: React.FC = () => {
             onChange={(e) => setOrganization(e.currentTarget.value)}
             required
             style={{ color: 'white' }}
-            />
+          />
 
           <Group justify="space-between" className={classes.controls}>
             <Anchor c="dimmed" size="sm" className={classes.control}>
@@ -231,7 +251,7 @@ const RegisterPage: React.FC = () => {
                 </Box>
               </Center>
             </Anchor>
-            <Button onClick={handleProceed} color="green" fullWidth mt="xl" className={classes.control}>
+            <Button color="green" fullWidth mt="xl" className={classes.control}>
               Proceed
             </Button>
           </Group>

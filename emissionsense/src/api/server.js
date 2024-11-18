@@ -107,7 +107,7 @@ app.post('/login', (req, res) => {
 
     if (results.length > 0) {
       const user = results[0]; // Get the first user record
-      const token = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: '7d' });
       res.status(200).json({ message: 'Login successful', token, userId: user.id, name: user.name, email: user.email });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
@@ -173,6 +173,39 @@ app.get('/user', authenticateToken, (req, res) => {
     } else {
       res.status(404).json({ error: 'User not found' });
     }
+  });
+});
+
+// Forgot Password Endpoint
+app.post('/forgot-password', async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  if (!email || !newPassword) {
+    return res.status(400).json({ error: 'Email and new password are required' });
+  }
+
+  // Check if user exists
+  const query = 'SELECT * FROM users WHERE email = ?';
+  db.query(query, [email], async (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password in the database
+    const updateQuery = 'UPDATE users SET password = ? WHERE email = ?';
+    db.query(updateQuery, [hashedPassword, email], (err, updateResults) => {
+      if (err) {
+        return res.status(500).json({ error: 'Failed to update password' });
+      }
+      return res.status(200).json({ message: 'Password updated successfully' });
+    });
   });
 });
 
