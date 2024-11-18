@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
@@ -33,43 +34,85 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+
+
+  app.post('/check-email', (req, res) => {
+    const { email } = req.body;
+    const query = 'SELECT * FROM users WHERE email = ?'; // Replace 'users' with your table name
+  
+    connection.query(query, [email], (err, results) => {
+      if (err) {
+        console.error('Error checking email:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+  
+      if (results.length > 0) {
+        return res.json({ exists: true });
+      } else {
+        return res.json({ exists: false });
+      }
+    });
+  });
+
+  // Ensure the uploads directory exists on startup
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true }); // Create the directory if it doesn't exist
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-   cb(null, 'uploads/');
+    cb(null, uploadsDir); // Save to uploads directory
   },
   filename: (req, file, cb) => {
-   cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, Date.now() + path.extname(file.originalname)); // Append timestamp to filename
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
+  fileFilter: (req, file, cb) => {
+    const fileTypes = /jpg|jpeg|png|gif/;
+    const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = fileTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true); // Accept the file
+    } else {
+      cb(new Error('Only image files are allowed.'));
+    }
+  }
+});
 
-  // Ensure the uploads directory exists
-  const fs = require('fs');
-  const uploadsDir = path.join(__dirname, 'uploads');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
+// File upload route
+app.post('/upload', upload.single('profileImage'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
   }
 
-app.post('/check-email', (req, res) => {
-  const { email } = req.body;
-
-  // SQL query to check for existing email
-  const query = 'SELECT * FROM users WHERE email = ?'; // Replace 'users' with your table name
-
-  connection.query(query, [email], (err, results) => {
-    if (err) {
-      console.error('Error checking email:', err);
-      return res.status(500).json({ error: 'Internal Server Error' });
-    }
-
-    if (results.length > 0) {
-      return res.json({ exists: true }); // Email exists
-    } else {
-      return res.json({ exists: false }); // Email does not exist
-    }
-  });
+  res.status(200).send({ fileName: req.file.filename });
 });
+
+// Serve the uploads folder
+app.use('/uploads', express.static(uploadsDir));
+
+  app.post('/check-email', (req, res) => {
+    const { email } = req.body;
+    const query = 'SELECT * FROM users WHERE email = ?'; // Replace 'users' with your table name
+  
+    connection.query(query, [email], (err, results) => {
+      if (err) {
+        console.error('Error checking email:', err);
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
+  
+      if (results.length > 0) {
+        return res.json({ exists: true });
+      } else {
+        return res.json({ exists: false });
+      }
+    });
+  });
 
 // Endpoint to insert user data into the MySQL database
 app.post('/register', upload.single('profilePicture'), (req, res) => {
@@ -81,13 +124,14 @@ app.post('/register', upload.single('profilePicture'), (req, res) => {
    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu, profilePicture], (err, results) => {
+  connection.query(query, [name, email, password, organization, device, cpu, gpu, ram, capacity, motherboard, psu, profilePicture], (err) => {
    if (err) {
     console.error('Error inserting data into the database:', err);
     return res.status(500).json({ error: 'Database error' });
    }
 
-   res.status(200).json({ message: 'User registered successfully' });
+   const profileImageUrl = profilePicture ? `http://localhost:5000/uploads/${profilePicture}` : null;
+   res.status(200).json({ message: 'User registered successfully', profileImageUrl });
   });
 });
 
@@ -107,7 +151,7 @@ app.post('/login', (req, res) => {
 
     if (results.length > 0) {
       const user = results[0]; // Get the first user record
-      const token = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: '7d' });
+      const token = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: '1h' });
       res.status(200).json({ message: 'Login successful', token, userId: user.id, name: user.name, email: user.email });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
@@ -134,7 +178,7 @@ app.get('/user', authenticateToken, (req, res) => {
   const { email } = req.user;
 
   const userQuery = `
-    SELECT name, organization, cpu, gpu, email FROM users WHERE email = ?
+    SELECT name, organization, cpu, gpu, email, profile_image FROM users WHERE email = ?
   `;
 
   connection.query(userQuery, [email], (err, userResults) => {
@@ -145,7 +189,12 @@ app.get('/user', authenticateToken, (req, res) => {
 
     if (userResults.length > 0) {
       const user = userResults[0];
-      const { cpu, gpu } = user;
+      const { cpu, gpu, profile_image } = user;
+      
+      // Fix the profile image URL construction
+      const profileImageUrl = profile_image
+        ? `http://localhost:5000/uploads/${profile_image}` // Assuming profile_image contains the filename (e.g., '1731926448773.jpg')
+        : null;
 
       // Queries for avg_watt_usage for both CPU and GPU
       const cpuQuery = `SELECT avg_watt_usage FROM cpus WHERE model = ?`;
@@ -166,46 +215,14 @@ app.get('/user', authenticateToken, (req, res) => {
           // Attach avg_watt_usage if found, else set as null
           user.cpu_avg_watt_usage = cpuResults[0]?.avg_watt_usage || null;
           user.gpu_avg_watt_usage = gpuResults[0]?.avg_watt_usage || null;
+          user.profile_image = profileImageUrl;
 
-          res.status(200).json({ user });
+          res.status(200).json({ user, profileImageUrl });
         });
       });
     } else {
       res.status(404).json({ error: 'User not found' });
     }
-  });
-});
-
-// Forgot Password Endpoint
-app.post('/forgot-password', async (req, res) => {
-  const { email, newPassword } = req.body;
-
-  if (!email || !newPassword) {
-    return res.status(400).json({ error: 'Email and new password are required' });
-  }
-
-  // Check if user exists
-  const query = 'SELECT * FROM users WHERE email = ?';
-  db.query(query, [email], async (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the password in the database
-    const updateQuery = 'UPDATE users SET password = ? WHERE email = ?';
-    db.query(updateQuery, [hashedPassword, email], (err, updateResults) => {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to update password' });
-      }
-      return res.status(200).json({ message: 'Password updated successfully' });
-    });
   });
 });
 
@@ -750,7 +767,17 @@ app.get('/displayuser', authenticateToken, (req, res) => {
 
     if (userResults.length > 0) {
       const user = userResults[0];
-      const { cpu, gpu, ram, motherboard, psu } = user;
+      const { cpu, gpu, profile_image } = user;
+      
+      // Fix the profile image URL construction
+      const profileImageUrl = profile_image
+        ? `http://localhost:5000/uploads/${profile_image}` // Assuming profile_image contains the filename (e.g., '1731926448773.jpg')
+        : null;
+
+        
+        user.profile_image = profileImageUrl;
+
+      const { ram, motherboard, psu } = user;
 
       // Queries for avg_watt_usage for both CPU and GPU
       const cpuQuery = `SELECT manufacturer, series, model, avg_watt_usage FROM cpus WHERE model = ?`;
@@ -783,7 +810,7 @@ app.get('/displayuser', authenticateToken, (req, res) => {
             PSU: psu
           };
 
-          res.status(200).json({ user: { ...user, specifications } });
+          res.status(200).json({ user: { ...user, specifications, profileImageUrl } });
         });
       });
     } else {
@@ -791,6 +818,7 @@ app.get('/displayuser', authenticateToken, (req, res) => {
     }
   });
 });
+
 
 // Endpoint to fetch full user details including organization and device specifications for mobile or laptop
 app.get('/displayuserM', authenticateToken, (req, res) => {
@@ -810,11 +838,21 @@ app.get('/displayuserM', authenticateToken, (req, res) => {
 
     if (userResults.length > 0) {
       const user = userResults[0];
-      const { cpu, gpu, ram, motherboard, psu } = user;
+      const { cpu, gpu, profile_image } = user;
+      
+      // Fix the profile image URL construction
+      const profileImageUrl = profile_image
+        ? `http://localhost:5000/uploads/${profile_image}` // Assuming profile_image contains the filename (e.g., '1731926448773.jpg')
+        : null;
+
+        
+        user.profile_image = profileImageUrl;
+
+      const { ram, motherboard, psu } = user;
 
       // Queries for avg_watt_usage for both CPU and GPU
-      const cpuQuery = `SELECT generation, model, watts FROM cpusm WHERE model = ?`;
-      const gpuQuery = `SELECT manufacturer, model, watts FROM gpusm WHERE model = ?`;
+      const cpuQuery = `SELECT manufacturer, series, model, avg_watt_usage FROM cpusm WHERE model = ?`;
+      const gpuQuery = `SELECT manufacturer, series, model, avg_watt_usage FROM gpusm WHERE model = ?`;
 
       connection.query(cpuQuery, [cpu], (err, cpuResults) => {
         if (err) {
@@ -831,19 +869,19 @@ app.get('/displayuserM', authenticateToken, (req, res) => {
           // Create the specifications object
           const specifications = {
             CPU: cpuResults.length > 0 
-              ? `${cpuResults[0].generation} ${cpuResults[0].model}`
+              ? `${cpuResults[0].manufacturer} ${cpuResults[0].series} ${cpuResults[0].model}`
               : cpu,
             GPU: gpuResults.length > 0 
-              ? `${gpuResults[0].manufacturer} ${gpuResults[0].model}`
+              ? `${gpuResults[0].manufacturer} ${gpuResults[0].series} ${gpuResults[0].model}`
               : gpu,
-            CPU_avg_watt_usage: cpuResults[0]?.watts || null,
-            GPU_avg_watt_usage: gpuResults[0]?.watts || null,
+            CPU_avg_watt_usage: cpuResults[0]?.avg_watt_usage || null,
+            GPU_avg_watt_usage: gpuResults[0]?.avg_watt_usage || null,
             RAM: ram,
             motherboard: motherboard,
             PSU: psu
           };
 
-          res.status(200).json({ user: { ...user, specifications } });
+          res.status(200).json({ user: { ...user, specifications, profileImageUrl } });
         });
       });
     } else {
@@ -852,11 +890,12 @@ app.get('/displayuserM', authenticateToken, (req, res) => {
   });
 });
 
+
 // Endpoint to check device type (Laptop or Personal Computer)
 app.get('/checkDeviceType', authenticateToken, (req, res) => {
   const userId = req.user.id; // Get user ID from the authenticated token
 
-  const query = `SELECT device FROM users WHERE id = ?`;
+  const query = `SELECT device, profile_image FROM users WHERE id = ?`;
 
   connection.query(query, [userId], (err, results) => {
     if (err) {

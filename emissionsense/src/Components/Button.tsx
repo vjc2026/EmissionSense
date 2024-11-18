@@ -10,7 +10,7 @@ import {
   Stack,
   Modal,
   Button,
-  Flex 
+  Flex,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 
@@ -19,6 +19,7 @@ export function HELPComponent() {
     name: string;
     email: string;
     organization: string;
+    profile_image: string | null;
     specifications: {
       GPU: string;
       CPU: string;
@@ -39,37 +40,43 @@ export function HELPComponent() {
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
-    const fetchUserDetails = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem('token');
-
+  
       if (!token) {
         setError('No token found, please log in.');
         setLoading(false);
         return;
       }
-
+  
       try {
+        // Fetch device type first
         const response = await fetch('http://localhost:5000/checkDeviceType', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
-
+  
         const { deviceType } = await response.json();
         setDeviceType(deviceType);
-
-        const endpoint = deviceType === 'Laptop' 
-          ? 'http://localhost:5000/displayuserM' 
+  
+        // Based on device type, choose the correct endpoint
+        const endpoint = deviceType === 'Laptop'
+          ? 'http://localhost:5000/displayuserM'
           : 'http://localhost:5000/displayuser';
-
+  
+        // Fetch user details
         const userResponse = await fetch(endpoint, {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
-
+  
         if (userResponse.ok) {
           const data = await userResponse.json();
           setUser(data.user);
-          fetchUserProjects(data.user.email);
+          console.log('User data fetched successfully:', data.user); // Log user data to check
+          
+          // After fetching user, fetch user projects
+          fetchUserProjects(data.user.email);  // Pass user email here
         } else {
           const result = await userResponse.json();
           setError(result.error || 'Failed to fetch user details.');
@@ -103,8 +110,8 @@ export function HELPComponent() {
       }
     };
 
-    fetchUserDetails();
-  }, []);
+    fetchData(); // Call the function once on component mount
+  }, []);  // Empty dependency array ensures it runs only once when the component mounts
 
   const handleProjectClick = (project: any) => {
     setSelectedProject(project);
@@ -134,13 +141,17 @@ export function HELPComponent() {
               style={{ backgroundColor: '#006747', color: 'white', borderRadius: '10px' }}
             >
               <Stack align="center" gap="md">
-                <Image
-                  src="https://i.pinimg.com/originals/2e/dd/02/2edd02160b51797f7adb807a79d96d36.jpg"
-                  alt="Profile Image"
-                  radius="xl"
-                  width={isMobile ? 100 : 150}
-                  height={isMobile ? 100 : 150}
-                />
+                {user && user.profile_image && (
+                  <Image
+                    src={`${user.profile_image}`}
+                    alt="Profile Image"
+                    width={isMobile ? 100 : 150}
+                    height={isMobile ? 100 : 150}
+                    radius="xl"
+                    mx="auto"
+                    mb="md"
+                  />
+                )}
                 <Text c="white" style={{ fontWeight: 600, fontSize: isMobile ? '18px' : '24px' }}>
                   {user?.name || 'N/A'}
                 </Text>
@@ -163,13 +174,7 @@ export function HELPComponent() {
                 <Loader size="xl" style={{ display: 'block', margin: '2rem auto' }} />
               ) : (
                 <Stack gap="md">
-                  <Title order={3}>Full Name</Title>
-                  <Text size={isMobile ? 'md' : 'lg'}>{user?.name || 'N/A'}</Text>
-  
-                  <Title order={3}>Email</Title>
-                  <Text size={isMobile ? 'md' : 'lg'}>{user?.email || 'N/A'}</Text>
-  
-                  <Title order={3}>Organization</Title>
+                  <Title order={4}>Organization</Title>
                   <Text size={isMobile ? 'md' : 'lg'}>{user?.organization || 'N/A'}</Text>
   
                   <Title order={3}>User Device Specifications</Title>
@@ -282,7 +287,7 @@ export function HELPComponent() {
               <Text size={isMobile ? 'xl' : '2xl'} fw={700}>
                 {selectedProject.project_name}
               </Text>
-              <Text size={isMobile ? 'md' : 'lg'} style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <Text size={isMobile ? 'md' : 'lg'}>
                 <strong>Description:</strong> {selectedProject.project_description}
               </Text>
               <Text size={isMobile ? 'md' : 'lg'}>
@@ -327,7 +332,6 @@ export function HELPComponent() {
       </Container>
     </Flex>
   );
-  
 }
 
 export default HELPComponent;

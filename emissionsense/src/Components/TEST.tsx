@@ -22,42 +22,29 @@ export function ProfileComponent() {
 
   useEffect(() => {
     const fetchUserDetails = async () => {
-      const token = localStorage.getItem('token'); 
-
+      const token = localStorage.getItem('token');
+      console.log('Token:', token);
+    
       if (!token) {
         setError('No token found, please log in.');
         setLoading(false);
         return;
       }
-
+    
       try {
-        // Fetch user details
         const response = await fetch('http://localhost:5000/user', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
-
+        console.log('Response status:', response.status);
+    
         if (response.ok) {
           const data = await response.json();
+          console.log('User data:', data);
           setUser(data.user);
-          
-          // If there's a user ID, fetch the profile image
-          if (data.user.id) {
-            const imageResponse = await fetch(`http://localhost:5000/profile-image/${data.user.id}`, {
-              headers: { 'Authorization': `Bearer ${token}` },
-            });
-
-            if (imageResponse.ok) {
-              const imageBlob = await imageResponse.blob();
-              const imageUrl = URL.createObjectURL(imageBlob);
-              setUser(prevUser => ({
-                ...prevUser!,
-                profile_image: imageUrl
-              }));
-            }
-          }
         } else {
           const result = await response.json();
+          console.log('Error response:', result);
           setError(result.error || 'Failed to fetch user details.');
         }
       } catch (err) {
@@ -67,7 +54,7 @@ export function ProfileComponent() {
         setLoading(false);
       }
     };
-
+    
     fetchUserDetails();
   }, []);
 

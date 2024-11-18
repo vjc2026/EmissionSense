@@ -34,6 +34,8 @@ export function HistoryComponent() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editableProject, setEditableProject] = useState<any | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [isSessionActive, setIsSessionActive] = useState(false);
 
   const formatDuration = (duration: number) => {
     const hours = Math.floor(duration / 3600);
@@ -409,6 +411,16 @@ export function HistoryComponent() {
     }
   };
   
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (isSessionActive) {
+      interval = setInterval(() => {
+        setTimer((prevTimer) => prevTimer + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval as NodeJS.Timeout);
+  }, [isSessionActive]);
+
   return (
     <Container className={styles.container}>
       <Title order={1} className={styles.title}>
@@ -460,11 +472,11 @@ export function HistoryComponent() {
           <Text style={{ fontSize: 18, fontWeight: 'bold' }}>
             Current Duration: {formatDuration(sessionDuration)}
           </Text>
-          
-          <Group mt="md" align="center" style={{ marginTop: 15 }}>
           <Button onClick={() => setIsCreateModalOpen(true)} style={{ backgroundColor: '#006400', color: '#fff'}}>
             Create Project
             </Button>
+          <Group mt="md" align="center" style={{ marginTop: 15 }}>
+          
             <Button onClick={startSession} disabled={isTimerRunning} style={{ backgroundColor: '#006400', color: '#fff' }}>
               Start Session
             </Button>
@@ -503,9 +515,9 @@ export function HistoryComponent() {
                 Edit
                 </Button>
                 <Button size="xs" color="red" onClick={() => {
-                setProjectName(project.project_name);
-                setProjectDescription(project.project_description);
-                setProjectStage(project.stage);
+                setProjectName('');
+                setProjectDescription('');
+                setProjectStage('');
                 handleDeleteProject(project.id);
                 }}>
                 Delete
@@ -528,25 +540,63 @@ export function HistoryComponent() {
         </Stack>
       )}
       <>
-      {/* Floating Help Button */}
-        <Button className={styles.floatingHelpButton} onClick={() => setIsHelpOpen(true)}>
-            Help
+        {/* Floating Help Button */}
+        <Button
+          title="Help"  // This adds a basic tooltip
+          onClick={() => setIsHelpOpen(true)}
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            borderRadius: '50%',
+            width: '60px',
+            height: '60px',
+            backgroundColor: '#006400',
+            color: 'white',
+            fontSize: '16px',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+            zIndex: 1000,
+            transition: 'transform 0.2s',
+            cursor: 'pointer',
+            ':hover': {
+              transform: 'scale(1.1)'
+            }
+          }}
+        >
+          ?
         </Button>
-            {/* Help Modal */}
-            <Modal opened={isHelpOpen} onClose={() => setIsHelpOpen(false)} title="How the System Works" centered>
-              <Text>
-                This system allows you to manage your projects and track carbon emissions during development.
-                <br />
-                1. Create a project by clicking the "Create Project" button which allows you to set a name and a description for your project. It is recommended to start your Project stage in Design.
-                <br />
-                2. Start a session to track time and emissions.
-                <br />
-                3. Complete stages to progress through the project lifecycle.
-                <br />
-                4. Monitor your project history for insights and records.
-              </Text>
-            </Modal>
-          </>
+
+        {/* Help Modal */}
+        <Modal 
+          opened={isHelpOpen} 
+          onClose={() => setIsHelpOpen(false)} 
+          title="How the System Works" 
+          centered
+          styles={{
+        title: {
+          fontSize: '24px',
+          fontWeight: 'bold',
+          color: '#006400',
+          marginBottom: '20px'
+        },
+        body: {
+          padding: '24px'
+        }
+          }}
+        >
+          <Text style={{ lineHeight: 1.6, fontSize: '16px' }}>
+        This system allows you to manage your projects and track carbon emissions during development.
+        <br /><br />
+        1. Create a project by clicking the "Create Project" button which allows you to set a name and a description for your project. It is recommended to start your Project stage in Design.
+        <br /><br />
+        2. Start a session to track time and emissions.
+        <br /><br />
+        3. Complete stages to progress through the project lifecycle.
+        <br /><br />
+        4. Monitor your project history for insights and records.
+          </Text>
+        </Modal>
+      </>
 
         {/* Create Project Modal */}
         <Modal opened={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create New Project">
@@ -615,6 +665,7 @@ export function HistoryComponent() {
         />
         <Group align="right" mt="md">
           <Button onClick={handleSaveChanges} style={{ backgroundColor: '#006400', color: '#fff' }}>Save Changes</Button>
+          <Button onClick={startSession} style={{ backgroundColor: '#0000FF', color: '#fff' }}>Start Session</Button>
         </Group>
       </Modal>
     </Container>
