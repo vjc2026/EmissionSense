@@ -107,7 +107,7 @@ app.post('/login', (req, res) => {
 
     if (results.length > 0) {
       const user = results[0]; // Get the first user record
-      const token = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign({ email: user.email, id: user.id }, JWT_SECRET, { expiresIn: '7d' });
       res.status(200).json({ message: 'Login successful', token, userId: user.id, name: user.name, email: user.email });
     } else {
       res.status(401).json({ error: 'Invalid credentials' });
