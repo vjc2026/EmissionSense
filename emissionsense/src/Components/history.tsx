@@ -33,6 +33,7 @@ export function HistoryComponent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editableProject, setEditableProject] = useState<any | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const formatDuration = (duration: number) => {
     const hours = Math.floor(duration / 3600);
@@ -526,6 +527,26 @@ export function HistoryComponent() {
           })}
         </Stack>
       )}
+      <>
+      {/* Floating Help Button */}
+        <Button className={styles.floatingHelpButton} onClick={() => setIsHelpOpen(true)}>
+            Help
+        </Button>
+            {/* Help Modal */}
+            <Modal opened={isHelpOpen} onClose={() => setIsHelpOpen(false)} title="How the System Works" centered>
+              <Text>
+                This system allows you to manage your projects and track carbon emissions during development.
+                <br />
+                1. Create a project by clicking the "Create Project" button which allows you to set a name and a description for your project. It is recommended to start your Project stage in Design.
+                <br />
+                2. Start a session to track time and emissions.
+                <br />
+                3. Complete stages to progress through the project lifecycle.
+                <br />
+                4. Monitor your project history for insights and records.
+              </Text>
+            </Modal>
+          </>
 
         {/* Create Project Modal */}
         <Modal opened={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Create New Project">
