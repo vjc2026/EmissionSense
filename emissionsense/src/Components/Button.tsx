@@ -49,7 +49,7 @@ export function HELPComponent() {
       }
 
       try {
-        const response = await fetch('https://emissionsense-server.onrender.com/checkDeviceType', {
+        const response = await fetch('http://localhost:5000/checkDeviceType', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -58,8 +58,8 @@ export function HELPComponent() {
         setDeviceType(deviceType);
 
         const endpoint = deviceType === 'Laptop' 
-          ? 'https://emissionsense-server.onrender.com/displayuserM' 
-          : 'https://emissionsense-server.onrender.com/displayuser';
+          ? 'http://localhost:5000/displayuserM' 
+          : 'http://localhost:5000/displayuser';
 
         const userResponse = await fetch(endpoint, {
           method: 'GET',
@@ -85,7 +85,7 @@ export function HELPComponent() {
     const fetchUserProjects = async (_email: string) => {
       const token = localStorage.getItem('token');
       try {
-        const response = await fetch('https://emissionsense-server.onrender.com/all_user_projects', {
+        const response = await fetch('http://localhost:5000/all_user_projects', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -303,7 +303,7 @@ export function HELPComponent() {
                 onClick={async () => {
                   const token = localStorage.getItem('token');
                   try {
-                    const response = await fetch(`https://emissionsense-server.onrender.com/delete_project/${selectedProject.id}`, {
+                    const response = await fetch(`http://localhost:5000/delete_project/${selectedProject.id}`, {
                       method: 'DELETE',
                       headers: { Authorization: `Bearer ${token}` },
                     });

@@ -9,7 +9,7 @@ import {
   Group,
   Container,
 } from '@mantine/core';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import classes from './Login.module.css';
 
@@ -21,7 +21,7 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch('https://emissionsense-server.onrender.com/login', {
+      const response = await fetch('http://localhost:5000/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,6 +54,33 @@ const LoginPage: React.FC = () => {
     navigate('/TEST');
   };
 
+  const refreshToken = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/refresh-token', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('token', data.token);
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+    }
+  };
+
+  useEffect(() => {
+    const refreshInterval = setInterval(refreshToken, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(refreshInterval);
+  }, []);
+
   return (
     <div className={classes.container}>
       <div className={classes.left}>
@@ -61,8 +88,8 @@ const LoginPage: React.FC = () => {
           <Title ta="center" className={classes.title} style={{ color: 'white' }}>
             Welcome back!
             <Button fullWidth mt="xl" color="green" onClick={testRegister}>
-            TEST
-          </Button>
+              TEST
+            </Button>
           </Title>
           <Text c="dimmed" size="sm" ta="center" mt={5}>
             Do not have an account yet?{' '}
@@ -98,7 +125,6 @@ const LoginPage: React.FC = () => {
           <Button fullWidth mt="xl" color="green" onClick={handleLogin}>
             Sign in
           </Button>
-          
         </Container>
       </div>
 

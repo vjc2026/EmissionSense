@@ -32,7 +32,7 @@ export function ProfileComponent() {
 
       try {
         // Fetch user details
-        const response = await fetch('https://emissionsense-server.onrender.com/user', {
+        const response = await fetch('http://localhost:5000/user', {
           method: 'GET',
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -43,7 +43,7 @@ export function ProfileComponent() {
           
           // If there's a user ID, fetch the profile image
           if (data.user.id) {
-            const imageResponse = await fetch(`https://emissionsense-server.onrender.com/profile-image/${data.user.id}`, {
+            const imageResponse = await fetch(`http://localhost:5000/profile-image/${data.user.id}`, {
               headers: { 'Authorization': `Bearer ${token}` },
             });
 
