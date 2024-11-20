@@ -33,7 +33,7 @@ const ResetPassword: React.FC = () => {
         setMessage(data.message);
         setError('');
         setTimeout(() => {
-          navigate('/');
+          navigate('/', { replace: true });
         }, 3000);
       } else {
         setError(data.error);
