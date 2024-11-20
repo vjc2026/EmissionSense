@@ -1,61 +1,49 @@
-import {
-  Paper,
-  TextInput,
-  Button,
-  Title,
-  Text,
-  Anchor,
-  Container,
-} from '@mantine/core';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import classes from './ForgotPassword.module.css';
+import { Container, TextInput, Button, Title, Text, Paper } from '@mantine/core';
+import styles from './ForgotPassword.module.css';
 
-const ForgotPasswordPage: React.FC = () => {
+const ForgotPasswordWithEmail: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();
 
-  const handleResetPassword = async () => {
+  const handleSendResetEmail = async () => {
     try {
-      const response = await fetch('http://localhost:5000/forgot-password', {
+      const response = await fetch('http://localhost:5000/send-reset-email', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, newPassword }), // Sends email and new password
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
       const result = await response.json();
-
       if (response.ok) {
-        setMessage('Password has been reset successfully. Please log in with your new password.');
+        setMessage('Password reset email sent successfully.');
         setError('');
       } else {
-        setError(result.error || 'Reset password failed.');
-        setMessage('');
+        setError(result.error || 'Failed to send password reset email.');
       }
     } catch (error) {
       console.error('Error:', error);
-      setError('An error occurred. Please try again later.');
-      setMessage('');
+      setError('An error occurred. Please try again.');
     }
   };
 
-  const handleBackToLogin = () => {
-    navigate('/');
-  };
-
   return (
-    <div className={classes.container}>
-      <Container size={420} my={40}>
-        <Title ta="center" className={classes.title} style={{ color: 'white' }}>
+    <Container className={styles.container}>
+      <Paper shadow="md" p={30} radius="md" style={{ backgroundColor: '#f8f9fa' }}>
+        <Title 
+          ta="center" 
+          style={{ 
+            color: '#006241', // DLSUD Green
+            marginBottom: '1rem',
+            fontSize: '1.8rem',
+            fontWeight: 600
+          }}
+        >
           Forgot your password?
         </Title>
-        <Text c="dimmed" size="sm" ta="center" mt={5}>
-          Enter your email and new password to reset your account password.
+        <Text size="sm" ta="center" mb={20} style={{ color: '#4a4a4a' }}>
+          Enter your email to receive a password reset link.
         </Text>
 
         <TextInput
@@ -64,38 +52,37 @@ const ForgotPasswordPage: React.FC = () => {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={{ marginBottom: '1rem', color: 'white' }}
+          styles={{
+            label: { color: '#006241', fontWeight: 500 },
+            input: {
+              '&:focus': {
+                borderColor: '#006241'
+              }
+            }
+          }}
         />
 
-        <TextInput
-          label="New Password"
-          placeholder="Enter your new password"
-          required
-          type="password"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          style={{ marginBottom: '1rem', color: 'white' }}
-        />
+        {error && <Text color="red" size="sm" ta="center" mt={10}>{error}</Text>}
+        {message && <Text color="#006241" size="sm" ta="center" mt={10}>{message}</Text>}
 
-        {error && <Text color="red" size="sm" ta="center">{error}</Text>}
-        {message && <Text color="green" size="sm" ta="center">{message}</Text>}
-
-        <Button fullWidth mt="md" color="green" onClick={handleResetPassword}>
-          Reset Password
-        </Button>
-
-        <Anchor
-          size="sm"
-          component="button"
-          style={{ color: 'green' }}
-          onClick={handleBackToLogin}
-          mt="md"
+        <Button 
+          onClick={handleSendResetEmail} 
+          fullWidth 
+          mt="xl"
+          styles={{
+            root: {
+              backgroundColor: '#006241',
+              '&:hover': {
+                backgroundColor: '#004830'
+              }
+            }
+          }}
         >
-          Back to login
-        </Anchor>
-      </Container>
-    </div>
+          Send Reset Email
+        </Button>
+      </Paper>
+    </Container>
   );
 };
 
-export default ForgotPasswordPage;
+export default ForgotPasswordWithEmail;

@@ -94,7 +94,7 @@ const DeviceForm: React.FC = () => {
       });
 
       if (response.status === 200) {
-        navigate('/');
+        navigate('/', { replace: true });
       } else {
         console.error('Error saving user data');
       }

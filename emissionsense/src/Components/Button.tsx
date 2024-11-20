@@ -152,7 +152,7 @@ export function HELPComponent() {
                     mb="md"
                   />
                 )}
-                <Text c="white" style={{ fontWeight: 600, fontSize: isMobile ? '18px' : '24px' }}>
+                <Text c="white" ta="center" style={{ fontWeight: 600, fontSize: isMobile ? '18px' : '24px' }}>
                   {user?.name || 'N/A'}
                 </Text>
                 <Text c="white" style={{ fontSize: isMobile ? '14px' : '18px' }}>
