@@ -31,7 +31,7 @@ export function StatisticsComponent() {
           const userData = await userResponse.json();
           setOrganization(userData.user.organization);
 
-          const projectsResponse = await fetch(`http://localhost:5000/organization_projects?organization=${userData.user.organization}`, {
+          const projectsResponse = await fetch('http://localhost:5000/user_projects_only', {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${token}` },
           });

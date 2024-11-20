@@ -157,6 +157,28 @@ const RegisterPage: React.FC = () => {
     }
   };
 
+  const handleProceed = () => {
+    if (!name || !email || !organization || (password && password !== confirmPassword)) {
+      alert('Please fill all fields and ensure the passwords match.');
+      return;
+    }
+    if (emailExists) {
+      alert('This email is already in use. Please choose a different email.');
+      return;
+    }
+
+    navigate('/proceed', {
+      state: {
+        name,
+        email,
+        password,
+        organization,
+        profilePicture,
+        profilePicturePreview,
+      },
+    });
+  };
+
   return (
     <div className={classes.container}>
       <Container size={460} my={30} className={classes.formContainer}>
@@ -251,7 +273,7 @@ const RegisterPage: React.FC = () => {
                 </Box>
               </Center>
             </Anchor>
-            <Button color="green" fullWidth mt="xl" className={classes.control}>
+            <Button onClick={handleProceed} color="green" fullWidth mt="xl" className={classes.control}>
               Proceed
             </Button>
           </Group>

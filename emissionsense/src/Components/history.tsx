@@ -136,9 +136,12 @@ export function HistoryComponent() {
           setSessionDuration(0);
        }
  
+       const startTime = Date.now();
+       localStorage.setItem('startTime', startTime.toString());
        setIsTimerRunning(true);
        const id = setInterval(() => {
-          setSessionDuration((prev) => prev + 1);
+         const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+         setSessionDuration(existingProject.session_duration + elapsedTime);
        }, 1000);
        setIntervalId(id);
     } catch (err) {
@@ -151,6 +154,7 @@ export function HistoryComponent() {
     if (!isTimerRunning) return;
     clearInterval(intervalId!);
     setIsTimerRunning(false);
+    localStorage.removeItem('startTime');
 
     const token = localStorage.getItem('token');
     const historyData = { 
@@ -224,6 +228,19 @@ export function HistoryComponent() {
     }
 };
 
+useEffect(() => {
+  const startTime = localStorage.getItem('startTime');
+  if (startTime) {
+    const elapsedTime = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+    setSessionDuration(prev => prev + elapsedTime);
+    setIsTimerRunning(true);
+    const id = setInterval(() => {
+      const newElapsedTime = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+      setSessionDuration(prev => prev + newElapsedTime);
+    }, 1000);
+    setIntervalId(id);
+  }
+}, []);
 
   const handleSaveChanges = async () => {
     if (!editableProject) return;
@@ -665,7 +682,6 @@ export function HistoryComponent() {
         />
         <Group align="right" mt="md">
           <Button onClick={handleSaveChanges} style={{ backgroundColor: '#006400', color: '#fff' }}>Save Changes</Button>
-          <Button onClick={startSession} style={{ backgroundColor: '#0000FF', color: '#fff' }}>Start Session</Button>
         </Group>
       </Modal>
     </Container>

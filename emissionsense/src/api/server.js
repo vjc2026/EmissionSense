@@ -998,7 +998,6 @@ app.post('/complete_project/:id', authenticateToken, (req, res) => {
 });
 
 
-
 app.get('/organization_projects', authenticateToken, (req, res) => {
   const { organization } = req.query;
 
@@ -1010,6 +1009,25 @@ app.get('/organization_projects', authenticateToken, (req, res) => {
   `;
 
   connection.query(query, [organization], (err, results) => {
+    if (err) {
+      console.error('Error querying the database:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    res.status(200).json({ projects: results });
+  });
+});
+
+app.get('/user_projects_only', authenticateToken, (req, res) => {
+  const userId = req.user.id; // Get user ID from the authenticated token
+
+  const query = `
+    SELECT id, project_name, project_description, session_duration, carbon_emit, status, stage
+    FROM user_history
+    WHERE user_id = ?
+  `;
+
+  connection.query(query, [userId], (err, results) => {
     if (err) {
       console.error('Error querying the database:', err);
       return res.status(500).json({ error: 'Database error' });
