@@ -4,8 +4,8 @@ import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, Bo
 import LoginPage from './LoginAndRegister/Login';
 import ButtonComponent from './Components/Button';
 import TextComponent from './Components/Text';
-import Register from './LoginAndRegister/Register';
 import ResetPassword from './LoginAndRegister/reset-password';
+import Register from './LoginAndRegister/Register';
 import Proceed from './LoginAndRegister/Proceed';
 import History from './Components/history';
 import TEST from './Components/TEST';
@@ -15,7 +15,6 @@ import classes from './Components/TEST.module.css';
 import { IconBoxPadding, IconCaretDownFilled, IconDashboard, IconUser, IconChartBar, IconHistory } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import StatisticsComponent from './Components/Statistics';
-
 
 // DLSU Colors
 const dlsuGreen = '#006F3C';
@@ -261,10 +260,10 @@ const App: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/register" element={<Register />} />
       <Route path="/main" element={<ProtectedRoute element={<MainContent />} />} />
       <Route path="/proceed" element={<Proceed />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/forgotpass" element={<Forgotpass />} />
       <Route path="/test" element={<TEST />} />
       <Route path="/test1" element={<UserSpecs />} />

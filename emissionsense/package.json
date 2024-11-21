@@ -19,6 +19,7 @@
     "@mantine/spotlight": "^7.12.2",
     "@mantine/styles": "^6.0.22",
     "@mantine/tiptap": "^7.12.2",
+    "@mantinex/mantine-logo": "^1.0.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
     "@svgr/webpack": "^8.1.0",
     "@tabler/icons": "^3.21.0",
