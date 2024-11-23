@@ -242,6 +242,27 @@ useEffect(() => {
   }
 }, []);
 
+useEffect(() => {
+  const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    if (isTimerRunning) {
+      // Standard way to show confirmation dialog
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  };
+
+  // Add event listener when timer is running
+  if (isTimerRunning) {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
+
+  // Cleanup function to remove event listener
+  return () => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  };
+}, [isTimerRunning]); // Re-run effect when timer status changes
+
   const handleSaveChanges = async () => {
     if (!editableProject) return;
 
@@ -684,6 +705,7 @@ useEffect(() => {
           <Button onClick={handleSaveChanges} style={{ backgroundColor: '#006400', color: '#fff' }}>Save Changes</Button>
         </Group>
       </Modal>
+      
     </Container>
   );
 }

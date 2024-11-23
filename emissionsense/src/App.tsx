@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
-import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, Box, Paper, Loader } from '@mantine/core';
+import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, Box, Paper, Loader, Menu, ActionIcon, Indicator } from '@mantine/core';
+import { IconBell, IconDashboard, IconUser, IconChartBar, IconHistory, IconLogout } from '@tabler/icons-react';
 import LoginPage from './LoginAndRegister/Login';
 import ButtonComponent from './Components/Button';
 import TextComponent from './Components/Text';
@@ -12,7 +13,6 @@ import TEST from './Components/TEST';
 import Forgotpass from './LoginAndRegister/ForgotPasswordPage';
 import UserSpecs from './Components/UserSpecs';
 import classes from './Components/TEST.module.css';
-import { IconBoxPadding, IconCaretDownFilled, IconDashboard, IconUser, IconChartBar, IconHistory } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import StatisticsComponent from './Components/Statistics';
 
@@ -49,6 +49,7 @@ const MainContent: React.FC = () => {
   const [currentComponent, setCurrentComponent] = React.useState<string>('component1');
   const [userData, setUserData] = React.useState<{ name: string; organization: string; profile_image: string | null }>({ name: '', organization: '', profile_image: null });
   const [loading, setLoading] = React.useState(true);
+  const [notifications, setNotifications] = React.useState<string[]>(['Notification 1', 'Notification 2']);
 
   React.useEffect(() => {
     const fetchUserData = async () => {
@@ -98,29 +99,63 @@ const MainContent: React.FC = () => {
       >
         <Flex justify="space-between" align="center" style={{ padding: '10px 20px', height: '100%' }}>
           <Burger
-            opened={opened}
-            onClick={() => setOpened(!opened)}
-            hiddenFrom="sm"
-            size="sm"
-            color="white"
+        opened={opened}
+        onClick={() => setOpened(!opened)}
+        hiddenFrom="sm"
+        size="sm"
+        color="white"
+          />
+            <Flex align="center" gap="md">
+          <img
+            src="https://i.ibb.co/5KcMwkj/with-bg-Icon.jpg"
+            alt="Website Icon"
+            style={{ width: '50px', height: '50px', borderRadius: '50%' }}
           />
           <Text size="xl" fw={700} c="white">
             Emission Sense
           </Text>
-          <Button
-            variant="black"
-            onClick={handleLogout}
-            styles={{
-              root: {
-                '&:hover': {
-                  backgroundColor: '#e7f5ff',
-                  color: dlsuGreen,
-                },
-              },
-            }}
-          >
-            LogOut
-          </Button>
+            </Flex>
+            <Group>
+  <Menu shadow="md" width={200}>
+    <Menu.Target>
+      <Indicator label={notifications.length} size={16} color="red">
+        <ActionIcon variant="transparent">
+          <IconBell size={24} color="white" />
+        </ActionIcon>
+      </Indicator>
+    </Menu.Target>
+    <Menu.Dropdown>
+      {notifications.length > 0 ? (
+        notifications.map((notification, index) => (
+          <Menu.Item key={index}>{notification}</Menu.Item>
+        ))
+      ) : (
+        <Menu.Item>No notifications</Menu.Item>
+      )}
+    </Menu.Dropdown>
+  </Menu>
+<Menu shadow="md" width={200}>
+  <Menu.Target>
+    <Avatar
+      src={userData.profile_image}
+      radius="xl"
+      size="md"
+      styles={{
+        root: {
+          border: '1px solid white',
+          '&:hover': {
+            transform: 'scale(1.05)',
+          },
+        },
+      }}
+    />
+  </Menu.Target>
+  <Menu.Dropdown>
+    <Menu.Item ta="center" onClick={() => setCurrentComponent('component2')}>Your Profile</Menu.Item>
+    <Menu.Item ta="center" onClick={handleLogout}>Logout</Menu.Item>
+  </Menu.Dropdown>
+</Menu>
+</Group>
         </Flex>
       </AppShell.Header>
 
@@ -132,114 +167,57 @@ const MainContent: React.FC = () => {
           boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
         }}
       >
-        <Paper
-          shadow="xs"
-          p="md"
-          mb="md"
-          style={{
-            borderRadius: '10px',
-            background: '#f8f9fa',
-          }}
-        >
-          {loading ? (
-            <Loader color={dlsuGreen} size="lg" />
-          ) : (
-            <UnstyledButton
-              className={classes.user}
-              style={{
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '10px',
-              }}
-            >
-              <Avatar
-                src={userData.profile_image} // Dynamically set the profile image
-                radius="xl"
-                size={100}
-                style={{ border: `0px solid ${dlsuGreen}` }}
-              />
-              <Box>
-                <Text size="md" fw={700} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  {userData.name}
-                </Text>
-                <Text c="dimmed" size="sm" ta="center">
-                  {userData.organization}
-                </Text>
-              </Box>
-            </UnstyledButton>
-          )}
-        </Paper>
-
-        <Box style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Box style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
           <Button
-            leftSection={<IconDashboard size={20} />}
-            variant={currentComponent === 'component1' ? 'filled' : 'light'}
-            onClick={() => setCurrentComponent('component1')}
-            fullWidth
-            styles={{
-              root: {
-                backgroundColor: currentComponent === 'component1' ? dlsuGreen : undefined,
-                '&:hover': {
-                  backgroundColor: dlsuLightGreen,
-                },
-                color: currentComponent === 'component1' ? 'white' : dlsuGreen,
-              },
-            }}
+        leftSection={<IconDashboard size={20} />}
+        variant={currentComponent === 'component1' ? 'filled' : 'light'}
+        onClick={() => setCurrentComponent('component1')}
+        fullWidth
+        styles={{
+          root: {
+            backgroundColor: currentComponent === 'component1' ? dlsuGreen : undefined,
+            '&:hover': {
+          backgroundColor: dlsuLightGreen,
+            },
+            color: currentComponent === 'component1' ? 'white' : dlsuGreen,
+          },
+        }}
           >
-            Dashboard
+        Dashboard
           </Button>
           <Button
-            leftSection={<IconUser size={20} />}
-            variant={currentComponent === 'component2' ? 'filled' : 'light'}
-            onClick={() => setCurrentComponent('component2')}
-            fullWidth
-            styles={{
-              root: {
-                backgroundColor: currentComponent === 'component2' ? dlsuGreen : undefined,
-                '&:hover': {
-                  backgroundColor: dlsuLightGreen,
-                },
-                color: currentComponent === 'component2' ? 'white' : dlsuGreen,
-              },
-            }}
+        leftSection={<IconChartBar size={20} />}
+        variant={currentComponent === 'component3' ? 'filled' : 'light'}
+        onClick={() => setCurrentComponent('component3')}
+        fullWidth
+        styles={{
+          root: {
+            backgroundColor: currentComponent === 'component3' ? dlsuGreen : undefined,
+            '&:hover': {
+          backgroundColor: dlsuLightGreen,
+            },
+            color: currentComponent === 'component3' ? 'white' : dlsuGreen,
+          },
+        }}
           >
-            Profile Page
+        Statistics
           </Button>
           <Button
-            leftSection={<IconChartBar size={20} />}
-            variant={currentComponent === 'component3' ? 'filled' : 'light'}
-            onClick={() => setCurrentComponent('component3')}
-            fullWidth
-            styles={{
-              root: {
-                backgroundColor: currentComponent === 'component3' ? dlsuGreen : undefined,
-                '&:hover': {
-                  backgroundColor: dlsuLightGreen,
-                },
-                color: currentComponent === 'component3' ? 'white' : dlsuGreen,
-              },
-            }}
+        leftSection={<IconHistory size={20} />}
+        variant={currentComponent === 'component4' ? 'filled' : 'light'}
+        onClick={() => setCurrentComponent('component4')}
+        fullWidth
+        styles={{
+          root: {
+            backgroundColor: currentComponent === 'component4' ? dlsuGreen : undefined,
+            '&:hover': {
+          backgroundColor: dlsuLightGreen,
+            },
+            color: currentComponent === 'component4' ? 'white' : dlsuGreen,
+          },
+        }}
           >
-            Statistics
-          </Button>
-          <Button
-            leftSection={<IconHistory size={20} />}
-            variant={currentComponent === 'component4' ? 'filled' : 'light'}
-            onClick={() => setCurrentComponent('component4')}
-            fullWidth
-            styles={{
-              root: {
-                backgroundColor: currentComponent === 'component4' ? dlsuGreen : undefined,
-                '&:hover': {
-                  backgroundColor: dlsuLightGreen,
-                },
-                color: currentComponent === 'component4' ? 'white' : dlsuGreen,
-              },
-            }}
-          >
-            Projects Session Tracker
+        Projects Session Tracker
           </Button>
         </Box>
       </AppShell.Navbar>
