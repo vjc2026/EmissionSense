@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
-import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, Box, Paper, Loader, Menu, ActionIcon, Indicator } from '@mantine/core';
+import { AppShell, Burger, Flex, Button, UnstyledButton, Group, Avatar, Text, Box, Paper, Loader, Menu, ActionIcon, Indicator, Modal } from '@mantine/core';
 import { IconBell, IconDashboard, IconUser, IconChartBar, IconHistory, IconLogout } from '@tabler/icons-react';
 import LoginPage from './LoginAndRegister/Login';
 import ButtonComponent from './Components/Button';
@@ -33,7 +33,7 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement }> = ({ element }) 
         navigate('/');  // Redirect to login if no token
       }
       setLoading(false);
-    }, 1000); // Simulate delay or async operation
+    },); // Simulate delay or async operation
   }, [token, navigate]);
 
   if (loading) {
@@ -49,7 +49,9 @@ const MainContent: React.FC = () => {
   const [currentComponent, setCurrentComponent] = React.useState<string>('component1');
   const [userData, setUserData] = React.useState<{ name: string; organization: string; profile_image: string | null }>({ name: '', organization: '', profile_image: null });
   const [loading, setLoading] = React.useState(true);
-  const [notifications, setNotifications] = React.useState<string[]>(['Notification 1', 'Notification 2']);
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [modalOpened, setModalOpened] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<{ id: string; message: string; sender_name: string } | null>(null);
 
   React.useEffect(() => {
     const fetchUserData = async () => {
@@ -76,12 +78,92 @@ const MainContent: React.FC = () => {
       }
     };
 
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/notifications', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      }
+    };
+
     fetchUserData();
+    fetchNotifications();
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/');
+  };
+
+  interface Notification {
+    id: string;
+    message: string;
+    sender_name: string;
+  }
+
+  const handleOpenModal = (notification: Notification) => {
+    setSelectedNotification(notification);
+    setModalOpened(true);
+  };
+
+  const handleAccept = async () => {
+    if (selectedNotification) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5000/invitations/${selectedNotification.id}/respond`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ response: 'accepted' }),
+        });
+
+        if (response.ok) {
+          // Handle successful response
+        } else {
+          // Handle error response
+        }
+      } catch (error) {
+        console.error('Error responding to invitation:', error);
+      }
+    }
+    setModalOpened(false);
+  };
+
+  const handleIgnore = async () => {
+    if (selectedNotification) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:5000/invitations/${selectedNotification.id}/respond`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ response: 'rejected' }),
+        });
+
+        if (response.ok) {
+          // Handle successful response
+        } else {
+          // Handle error response
+        }
+      } catch (error) {
+        console.error('Error responding to invitation:', error);
+      }
+    }
+    setModalOpened(false);
   };
 
   return (
@@ -116,7 +198,7 @@ const MainContent: React.FC = () => {
           </Text>
             </Flex>
             <Group>
-  <Menu shadow="md" width={200}>
+  <Menu shadow="md" width={300}>
     <Menu.Target>
       <Indicator label={notifications.length} size={16} color="red">
         <ActionIcon variant="transparent">
@@ -125,14 +207,17 @@ const MainContent: React.FC = () => {
       </Indicator>
     </Menu.Target>
     <Menu.Dropdown>
-      {notifications.length > 0 ? (
-        notifications.map((notification, index) => (
-          <Menu.Item key={index}>{notification}</Menu.Item>
-        ))
-      ) : (
-        <Menu.Item>No notifications</Menu.Item>
-      )}
-    </Menu.Dropdown>
+  {notifications.length > 0 ? (
+    notifications.map((notification, index) => (
+      <Menu.Item key={index} onClick={() => handleOpenModal(notification)}>
+        <Text fw={500}>{notification.message}</Text>
+        <Text size="xs" color="dimmed">From: {notification.sender_name}</Text>
+      </Menu.Item>
+    ))
+  ) : (
+    <Menu.Item>No notifications</Menu.Item>
+  )}
+</Menu.Dropdown>
   </Menu>
 <Menu shadow="md" width={200}>
   <Menu.Target>
@@ -230,6 +315,22 @@ const MainContent: React.FC = () => {
           {currentComponent === 'component4' && <History />}
         </Paper>
       </AppShell.Main>
+      <Modal
+        opened={modalOpened}
+        onClose={() => setModalOpened(false)}
+        title="Project Invitation"
+      >
+        {selectedNotification && (
+          <>
+            <Text fw={500}>{selectedNotification.message}</Text>
+            <Text size="xs" color="dimmed">From: {selectedNotification.sender_name}</Text>
+            <Group align="apart" mt="md">
+              <Button color="green" onClick={handleAccept}>Accept</Button>
+              <Button color="red" onClick={handleIgnore}>Ignore</Button>
+            </Group>
+          </>
+        )}
+      </Modal>
     </AppShell>
   );
 };

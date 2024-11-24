@@ -1211,3 +1211,182 @@ app.post('/resetpassword', async (req, res) => {
     return res.status(500).json({ error: 'Invalid or expired token.' });
   }
 });
+
+
+// Send project invitation
+app.post('/send-invitation', authenticateToken, (req, res) => {
+  const senderId = req.user.id;
+  const { recipientEmail, projectId, message } = req.body;
+
+  // First get recipient's user ID from their email
+  const getUserQuery = 'SELECT id FROM users WHERE email = ?';
+  
+  connection.query(getUserQuery, [recipientEmail], (err, userResults) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    
+    if (userResults.length === 0) {
+      return res.status(404).json({ error: 'Recipient not found' });
+    }
+
+    const recipientId = userResults[0].id;
+    
+    // Create notification
+    const createNotificationQuery = `
+      INSERT INTO notifications (sender_id, recipient_id, project_id, type, message)
+      VALUES (?, ?, ?, 'project_invitation', ?)
+    `;
+
+    connection.query(createNotificationQuery, 
+      [senderId, recipientId, projectId, message],
+      (err, results) => {
+        if (err) {
+          console.error('Error creating notification:', err);
+          return res.status(500).json({ error: 'Failed to send invitation' });
+        }
+        res.json({ message: 'Invitation sent successfully' });
+    });
+  });
+});
+
+// Get user's notifications
+app.get('/notifications', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+
+  const query = `
+    SELECT 
+      n.*,
+      u.name as sender_name,
+      u.email as sender_email,
+      p.project_name,
+      p.project_description
+    FROM notifications n
+    JOIN users u ON n.sender_id = u.id
+    JOIN user_history p ON n.project_id = p.id
+    WHERE n.recipient_id = ?
+    ORDER BY n.created_at DESC
+  `;
+
+  connection.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error('Error fetching notifications:', err);
+      return res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+    res.json({ notifications: results });
+  });
+});
+
+// Mark notification as read
+app.put('/notifications/:id/read', authenticateToken, (req, res) => {
+  const notificationId = req.params.id;
+  const userId = req.user.id;
+
+  const query = `
+    UPDATE notifications 
+    SET status = 'read'
+    WHERE id = ? AND recipient_id = ?
+  `;
+
+  connection.query(query, [notificationId, userId], (err, results) => {
+    if (err) {
+      console.error('Error updating notification:', err);
+      return res.status(500).json({ error: 'Failed to update notification' });
+    }
+    res.json({ message: 'Notification marked as read' });
+  });
+});
+
+// Respond to project invitation
+app.put('/invitations/:id/respond', authenticateToken, (req, res) => {
+  const notificationId = req.params.id;
+  const userId = req.user.id;
+  const { response } = req.body; // 'accepted' or 'rejected'
+
+  connection.beginTransaction(async (err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Transaction error' });
+    }
+
+    try {
+      // Update notification status
+      const updateQuery = `
+        UPDATE notifications 
+        SET response = ?, status = 'read'
+        WHERE id = ? AND recipient_id = ?
+      `;
+
+      await new Promise((resolve, reject) => {
+        connection.query(updateQuery, [response, notificationId, userId], (err, results) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve(results);
+        });
+      });
+
+      // If accepted, add user to project_members
+      if (response === 'accepted') {
+        const getProjectIdQuery = `
+          SELECT project_id FROM notifications WHERE id = ? AND recipient_id = ?
+        `;
+
+        const projectId = await new Promise((resolve, reject) => {
+          connection.query(getProjectIdQuery, [notificationId, userId], (err, results) => {
+            if (err) {
+              return reject(err);
+            }
+            resolve(results[0].project_id);
+          });
+        });
+
+        const insertMemberQuery = `
+          INSERT INTO project_members (project_id, user_id, role)
+          VALUES (?, ?, 'member')
+        `;
+
+        await new Promise((resolve, reject) => {
+          connection.query(insertMemberQuery, [projectId, userId], (err, results) => {
+            if (err) {
+              return reject(err);
+            }
+            resolve(results);
+          });
+        });
+      }
+
+      connection.commit((err) => {
+        if (err) {
+          return connection.rollback(() => {
+            res.status(500).json({ error: 'Transaction commit error' });
+          });
+        }
+        res.json({ message: 'Invitation response recorded successfully' });
+      });
+    } catch (error) {
+      connection.rollback(() => {
+        res.status(500).json({ error: 'Transaction error' });
+      });
+    }
+  });
+});
+
+// Get project members
+app.get('/project/:id/members', authenticateToken, (req, res) => {
+  const projectId = req.params.id;
+
+  const query = `
+    SELECT u.id, u.name, u.email, pm.role, pm.joined_at
+    FROM project_members pm
+    JOIN users u ON pm.user_id = u.id
+    WHERE pm.project_id = ?
+  `;
+
+  connection.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error('Error fetching project members:', err);
+      return res.status(500).json({ error: 'Failed to fetch project members' });
+    }
+    res.json({ members: results });
+  });
+});

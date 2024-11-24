@@ -14,6 +14,8 @@ import {
   Select
 } from '@mantine/core';
 import styles from './History.module.css';
+import { showNotification } from '@mantine/notifications';
+import { useNavigate } from 'react-router-dom';
 
 export function HistoryComponent() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
@@ -36,6 +38,7 @@ export function HistoryComponent() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [timer, setTimer] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const navigate = useNavigate();
 
   const formatDuration = (duration: number) => {
     const hours = Math.floor(duration / 3600);
@@ -449,6 +452,36 @@ useEffect(() => {
     }
   };
   
+  interface InviteUserPayload {
+    recipientEmail: string;
+    projectId: number;
+    message: string;
+  }
+
+  const handleInviteUser = async (recipientEmail: string, projectId: number, message: string): Promise<void> => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch('http://localhost:5000/send-invitation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recipientEmail, projectId, message } as InviteUserPayload),
+      });
+
+      if (response.ok) {
+        alert('Invitation sent successfully');
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to send invitation: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      alert('An error occurred while sending the invitation.');
+    }
+  };
+
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     if (isSessionActive) {
@@ -570,6 +603,15 @@ useEffect(() => {
                 handleCompleteStage(project.id);
                 }}>
                 Complete Stage
+                </Button>
+                <Button size="xs" onClick={() => {
+                  const recipientEmail = prompt('Enter the email of the user to invite:');
+                  const message = prompt('Enter your invitation message:');
+                  if (recipientEmail && message) {
+                    handleInviteUser(recipientEmail, project.id, message);
+                  }
+                }} style={{ backgroundColor: '#006400', color: '#fff' }}>
+                  Invite
                 </Button>
                 </Group>
                 </Card>
@@ -705,6 +747,8 @@ useEffect(() => {
           <Button onClick={handleSaveChanges} style={{ backgroundColor: '#006400', color: '#fff' }}>Save Changes</Button>
         </Group>
       </Modal>
+
+
       
     </Container>
   );
